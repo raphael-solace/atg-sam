@@ -1,10 +1,39 @@
 'use strict';
 
 const $ = id => document.getElementById(id);
-const standingsTopic = 'atg/derby/leaderboard';
+const topicRoots = new Map([
+  ['atg/racing/v85/raceCard/published/v1', 'snapshot'],
+  ['atg/racing/v85/raceResult/confirmed/v1', 'result'],
+  ['atg/betting/v85/pool/settled/v1', 'payout'],
+  ['atg/analytics/v85/modelTicket/proposed/v1', 'bet'],
+  ['atg/analytics/v85/leaderboard/updated/v1', 'leaderboard'],
+]);
+const validId = /^[A-Za-z0-9_-]+$/;
+const validLeg = /^[1-8]$/;
+
+function parseTopic(topic) {
+  if (typeof topic !== 'string') return null;
+  const parts = topic.split('/');
+  const kind = topicRoots.get(parts.slice(0,6).join('/'));
+  if (kind && validId.test(parts[6] || '')) {
+    const detail = parts[7];
+    if (['payout','leaderboard'].includes(kind)) return parts.length === 7 ? {kind, key: parts[6]} : null;
+    if (parts.length === 8 && (kind === 'bet' ? validId : validLeg).test(detail)) return {kind, key: parts[6], detail};
+  }
+  // Keep older local JSONL logs importable.
+  if (topic === 'atg/derby/leaderboard') return {kind:'leaderboard'};
+  if (parts.slice(0,3).join('/') !== 'atg/derby/v85' || !validId.test(parts[3] || '')) return null;
+  const [, , , key, name, detail, action] = parts;
+  if (name === 'payout' && parts.length === 5) return {kind:'payout', key};
+  if (name === 'bet' && parts.length === 6 && validId.test(detail)) return {kind:'bet', key, detail};
+  if (name === 'leg' && parts.length === 7 && validLeg.test(detail) && ['snapshot','result'].includes(action)) {
+    return {kind:action, key, detail};
+  }
+  return null;
+}
 const series = [
   ['gpt6_luna', 'GPT-6 Luna', '#6ff7ba', []],
-  ['o3', 'O3 · Claude panel', '#78bcf4', []],
+  ['o3', 'Orchestrator3', '#78bcf4', []],
   ['claude_haiku', 'Claude Haiku', '#c8a1e0', []],
   ['gemini_pro', 'Gemini Pro', '#b9ac94', []],
   ['o4', 'O4 · Astra council', '#ffc269', []],
@@ -15,7 +44,7 @@ const sek = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 0, signDispla
 const pct = new Intl.NumberFormat('en-GB', {style: 'percent', maximumFractionDigits: 1, minimumFractionDigits: 1, signDisplay: 'exceptZero'});
 const fmtTime = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 let replay = [], settlements = [], playing = false, elapsed = 0, cursor = 0, lastFrame = null;
-let roundKey, roundNo, legNo, cards, winners, board, panel, phase, imported = false;
+let roundKey, roundNo, legNo, cards, winners, board, panel, headToHead, phase, imported = false;
 
 function element(tag, content, className) {
   const node = document.createElement(tag);
@@ -37,6 +66,7 @@ function clear() {
   roundNo = 1;
   board = [];
   panel = null;
+  headToHead = null;
   clearRound();
   phase = 'Ready to replay';
   $('feed').replaceChildren(element('div', 'Press Play to receive the first race card.', 'placeholder'));
@@ -46,17 +76,17 @@ function clear() {
 function install(events, personal) {
   if (!Array.isArray(events) || events.length === 0 ||
       !events.every(e => Number.isFinite(e.at) && e.at >= 0 &&
-                       (e.topic === standingsTopic || /^atg\/derby\/v85\/[^/]+\/(leg\/[1-8]\/(snapshot|result)|bet\/[^/]+|payout)$/.test(e.topic)) &&
+                       parseTopic(e.topic) &&
                         e.payload && typeof e.payload === 'object')) throw Error('Unsupported replay file.');
-  const ordered = events.slice().sort((a,b) => a.at - b.at);
-  const rounds = ordered.filter(e => e.topic === standingsTopic);
+  const ordered = events.map(e => ({...e, address: parseTopic(e.topic)})).sort((a,b) => a.at - b.at);
+  const rounds = ordered.filter(e => e.address.kind === "leaderboard");
   if (!rounds.length || rounds.length > 10 || rounds.some((r,i) =>
       r.payload.after_round !== i + 1 || !Array.isArray(r.payload.standings))) throw Error('Missing or out-of-order leaderboard settlements.');
   playing = false;
   imported = personal;
   replay = ordered;
   settlements = rounds;
-  $('source').textContent = personal ? 'Local event log' : 'Recorded MQTT stream';
+  $('source').textContent = personal ? 'Local event log' : 'Recorded replay';
   $('basis').textContent = personal ? 'Local event log · Read in this browser only' : 'Archived backtest · Anonymized runners · No bets placed';
   $('play').disabled = $('restart').disabled = false;
   $('weeks').replaceChildren(...rounds.map((evt,i) => {
@@ -74,7 +104,8 @@ function pushEvent(evt, type, title, details = null) {
   const entry = element(details ? 'details' : 'div', null, `event ${type}`);
   entry.title = evt.topic;
   const line = element(details ? 'summary' : 'div', null, 'item');
-  line.append(element('time', fmtTime(evt.at), 'stamp'), element('span', type, 'tag'), element('span', title, 'event-text'));
+  line.append(element('time', fmtTime(evt.at), 'stamp'), element('span', type, 'tag'),
+              element('span', title, 'event-text'), element('code', evt.topic, 'event-topic'));
   entry.append(line);
   if (details) {
     const ticket = element('div', null, 'ticket');
@@ -88,30 +119,33 @@ function pushEvent(evt, type, title, details = null) {
 
 function receive(evt) {
   const p = evt.payload;
-  if (evt.topic === standingsTopic) {
-    board = p.standings.filter(r => r.strategy !== 'builder' && typeof r.roi === 'number');
+  const {kind, key, detail: n} = evt.address;
+  if (kind === 'leaderboard') {
+    board = p.standings.filter(r => r.strategy !== 'builder' && typeof r.roi === 'number')
+              .map(r => r.name === 'o3' ? {...r, label:'Orchestrator3'} : r);
+    headToHead = p.head_to_head;
     roundNo = p.after_round;
     panel = p.council;
     phase = 'Round settled';
     pushEvent(evt, 'settled', `Week ${roundNo} · ${board[0]?.label || 'Standings updated'}`);
     return;
   }
-  const [, , , key, kind, n, action] = evt.topic.split('/');
   if (roundKey !== key) {
     roundKey = key;
     roundNo = Math.min(settlements.length, Math.max(1, settlements.findIndex(r => r.payload.round_id === key) + 1));
     clearRound();
   }
-  if (kind === 'leg' && action === 'snapshot') {
+  if (kind === 'snapshot') {
     cards[n] = p.options || (p.starters || []).filter(h => !h.scratched).map(h => ({
       id: h.start_number, text: `${h.start_number} ${h.horse}${h.win_odds ? ' · ' + h.win_odds : ''}`
     }));
     pushEvent(evt, 'card', `Leg ${n} · ${cards[n].length} runners`);
   } else if (kind === 'bet') {
     phase = 'Tickets locked';
-    pushEvent(evt, 'bet', p.invalid ? `${p.forecaster} · Invalid` :
-      `${p.forecaster}${n.endsWith('-builder') ? ' · Builder' : ''} · ${p.cost_sek} SEK`, p.ticket);
-  } else if (kind === 'leg' && action === 'result') {
+    const name = /^(o3|orchestrator3)(-builder)?$/.test(n) ? 'Orchestrator3' : p.forecaster;
+    pushEvent(evt, 'bet', p.invalid ? `${name} · Invalid` :
+      `${name}${n.endsWith('-builder') ? ' · Builder' : ''} · ${p.cost_sek} SEK`, p.ticket);
+  } else if (kind === 'result') {
     const deadHeat = (p.options || p.winner_numbers || []).length > 1;
     winners[n] = p.options || p.winner_numbers;
     legNo = Number(n);
@@ -148,7 +182,7 @@ function paint() {
   $('round').textContent = 'Round ' + String(roundNo).padStart(2, '0');
   $('phase').textContent = done ? 'Replay complete' : phase;
   $('settled').textContent = `${settled} OF ${settlements.length} SETTLED`;
-  $('lead-caption').textContent = done ? 'FINAL WINNER BY ROI' : 'LEADER AFTER SETTLEMENT';
+  $('lead-caption').textContent = done ? `ALL ${settlements.length} ROUNDS · WINNER BY ROI` : 'LEADER AFTER SETTLEMENT';
   $('leader').textContent = board[0]?.label || 'Awaiting results';
   $('leader-roi').textContent = board[0] ? pct.format(board[0].roi) : '—';
   $('leader-net').textContent = board[0] ? `${sek.format(board[0].net_sek)} SEK` : '';
@@ -176,6 +210,7 @@ function paint() {
     cell.colSpan = 3;
     const row = element('tr'); row.append(cell); $('scores').replaceChildren(row);
   }
+  paintHeadToHead(settled);
   $('council').hidden = !panel;
   if (panel) {
     const astra = board.find(r => r.name === 'o4');
@@ -186,6 +221,21 @@ function paint() {
       `${pct.format(marketWeight).replace('+','')} average market weight for this round`));
   }
   plot();
+}
+
+function paintHeadToHead(settled) {
+  const report = $('head-to-head');
+  report.hidden = !headToHead?.matched_rounds;
+  if (report.hidden) return;
+  const count = headToHead.matched_rounds;
+  $('match-count').textContent = `${count} of ${settled} settled rounds · Both tickets valid`;
+  $('match-entries').replaceChildren(...headToHead.entries.map(item => {
+    const row = element('div', null, 'match-row');
+    row.append(element('span', item.label),
+               element('strong', `${sek.format(item.net_sek)} SEK`, item.net_sek > 0 ? 'gain' : 'loss'),
+               element('span', pct.format(item.roi), 'match-roi'));
+    return row;
+  }));
 }
 
 function plot() {

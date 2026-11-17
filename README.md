@@ -11,3 +11,8 @@ The GPT-6 Astra council routes to one available GPT, Gemini and Claude forecast 
 The **Prompt study** page compares basic and selective-value prompting in a separate matched backtest. Only aggregate model performance and the prompt change are published.
 
 **Ticket builders** compares the original coverage builder, a payout-aware builder at exactly the same stake, and a selective policy on a separate 15-round holdout. The Pages deployment contains aggregate performance only.
+
+
+The replay displays the demo's proposed ATG-style topic addresses. The roots follow Solace’s domain, object, action, and version pattern. Race cards and official results use the racing namespace, pool settlement uses betting, and simulated model proposals and standings use analytics. These names do not describe a verified ATG production catalog.
+
+**Orchestrator3** is the Claude Opus 5.5 panel. Its head-to-head comparison with GPT-6 Luna includes rounds where both submitted valid tickets. The full leaderboard retains all ten rounds and applies the original penalty for each invalid ticket.
