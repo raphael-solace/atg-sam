@@ -178,6 +178,8 @@ function paint() {
   }
   $('council').hidden = !panel;
   if (panel) {
+    const astra = board.find(r => r.name === 'o4');
+    $('council-summary').textContent = astra ? `Astra council · ${pct.format(astra.roi)} ROI` : 'Latest Astra council panel';
     const names = panel.experts.map(r => r.label).join(' · ');
     const marketWeight = panel.weights && Object.values(panel.weights).reduce((s,r) => s + (r.crowd || 0) + (r.win_odds || 0), 0) / 8;
     $('experts').replaceChildren(element('p', names), element('p', marketWeight == null ? '' :
