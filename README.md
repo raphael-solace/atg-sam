@@ -16,3 +16,5 @@ The **Prompt study** page compares basic and selective-value prompting in a sepa
 The replay displays the demo's proposed ATG-style topic addresses. The roots follow Solace’s domain, object, action, and version pattern. Race cards and official results use the racing namespace, pool settlement uses betting, and simulated model proposals and standings use analytics. These names do not describe a verified ATG production catalog.
 
 **Orchestrator3** is the Claude Opus 5.5 panel. Its head-to-head comparison with GPT-6 Luna includes rounds where both submitted valid tickets. The full leaderboard retains all ten rounds and applies the original penalty for each invalid ticket.
+
+The main chart starts with the valid-ticket head-to-head on the ten-week timeline. Dashed segments indicate excluded weeks. Select **All rounds** for the historical curve with invalid-ticket penalties. The official settlement stream and full standings always use every round.

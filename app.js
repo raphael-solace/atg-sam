@@ -32,8 +32,8 @@ function parseTopic(topic) {
   return null;
 }
 const series = [
-  ['gpt6_luna', 'GPT-6 Luna', '#6ff7ba', []],
   ['o3', 'Orchestrator3', '#78bcf4', []],
+  ['gpt6_luna', 'GPT-6 Luna', '#6ff7ba', []],
   ['claude_haiku', 'Claude Haiku', '#c8a1e0', []],
   ['gemini_pro', 'Gemini Pro', '#b9ac94', []],
   ['o4', 'O4 · Astra council', '#ffc269', []],
@@ -45,6 +45,7 @@ const pct = new Intl.NumberFormat('en-GB', {style: 'percent', maximumFractionDig
 const fmtTime = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 let replay = [], settlements = [], playing = false, elapsed = 0, cursor = 0, lastFrame = null;
 let roundKey, roundNo, legNo, cards, winners, board, panel, headToHead, phase, imported = false;
+let scoreView = 'all', hasMatch = false;
 
 function element(tag, content, className) {
   const node = document.createElement(tag);
@@ -86,6 +87,9 @@ function install(events, personal) {
   imported = personal;
   replay = ordered;
   settlements = rounds;
+  hasMatch = Boolean(rounds.at(-1).payload.head_to_head?.matched_rounds);
+  scoreView = hasMatch && new URLSearchParams(location.search).get('view') !== 'all' ? 'matched' : 'all';
+  $('score-view').hidden = !hasMatch;
   $('source').textContent = personal ? 'Local event log' : 'Recorded replay';
   $('basis').textContent = personal ? 'Local event log · Read in this browser only' : 'Archived backtest · Anonymized runners · No bets placed';
   $('play').disabled = $('restart').disabled = false;
@@ -127,7 +131,7 @@ function receive(evt) {
     roundNo = p.after_round;
     panel = p.council;
     phase = 'Round settled';
-    pushEvent(evt, 'settled', `Week ${roundNo} · ${board[0]?.label || 'Standings updated'}`);
+    pushEvent(evt, 'settled', `Week ${roundNo} · Full standings: ${board[0]?.label || 'Updated'}`);
     return;
   }
   if (roundKey !== key) {
@@ -172,20 +176,51 @@ function paintClock() {
   if ($('time').textContent !== next) $('time').textContent = next;
 }
 
+function countSettled() {
+  return board?.[0] ? board[0].bankroll.length - 1 : 0;
+}
+
+function scoredView(settled) {
+  if (scoreView === 'all') return {entries: board || [], excluded: new Set()};
+  const history = settlements.slice(0, settled).map(event => event.payload.head_to_head);
+  const excluded = new Set();
+  history.forEach((pair, i) => {
+    if ((pair?.matched_rounds || 0) === (history[i-1]?.matched_rounds || 0)) excluded.add(i+1);
+  });
+  const entries = (headToHead?.entries || [])
+    .filter(entry => typeof entry.roi === 'number')
+    .map(entry => ({
+      ...entry,
+      bankroll: [0, ...history.map(pair => pair?.entries.find(row => row.name === entry.name)?.net_sek || 0)],
+    }))
+    .sort((a,b) => b.roi - a.roi);
+  return {entries, excluded};
+}
+
 function paint() {
   if (!replay.length) return;
-  const settled = board[0] ? board[0].bankroll.length - 1 : 0;
+  const settled = countSettled();
   const done = cursor === replay.length;
+  const matched = scoreView === 'matched';
+  const lead = scoredView(settled).entries[0];
+  $('view-matched').setAttribute('aria-pressed', String(matched));
+  $('view-all').setAttribute('aria-pressed', String(!matched));
+  $('score-scope').hidden = !matched;
+  $('score-scope').textContent = `${headToHead?.matched_rounds || 0} of ${settlements.length} rounds count. Both tickets must be valid. Dashed segments mark excluded rounds.`;
+  $('chart').setAttribute('aria-label', matched ? 'Net return on weeks where both tickets were valid' : 'Net return by settled week, including invalid tickets');
+  for (const chip of $('legend').children) chip.hidden = matched && !['o3','gpt6_luna'].includes(chip.dataset.entry);
   $('play').textContent = playing ? 'Pause' : done ? 'Replay' : cursor ? 'Resume' : 'Play replay';
   paintClock();
   $('event-count').textContent = `${cursor} / ${replay.length} events`;
   $('round').textContent = 'Round ' + String(roundNo).padStart(2, '0');
   $('phase').textContent = done ? 'Replay complete' : phase;
   $('settled').textContent = `${settled} OF ${settlements.length} SETTLED`;
-  $('lead-caption').textContent = done ? `ALL ${settlements.length} ROUNDS · WINNER BY ROI` : 'LEADER AFTER SETTLEMENT';
-  $('leader').textContent = board[0]?.label || 'Awaiting results';
-  $('leader-roi').textContent = board[0] ? pct.format(board[0].roi) : '—';
-  $('leader-net').textContent = board[0] ? `${sek.format(board[0].net_sek)} SEK` : '';
+  $('lead-caption').textContent = done
+    ? (matched ? 'WINNER BY ROI · VALID TICKETS' : `WINNER BY ROI · ALL ${settlements.length} ROUNDS`)
+    : 'LEADER AFTER SETTLEMENT';
+  $('leader').textContent = lead?.label || 'Awaiting results';
+  $('leader-roi').textContent = lead ? pct.format(lead.roi) : '—';
+  $('leader-net').textContent = lead ? `${sek.format(lead.net_sek)} SEK` : '';
   Array.from($('weeks').children).forEach((btn,i) => {
     btn.classList.toggle('done', i < settled); btn.classList.toggle('active', i + 1 === roundNo);
   });
@@ -243,7 +278,8 @@ function plot() {
   if (!w || !h) return;
   cn.width = w * px; cn.height = h * px;
   const c = cn.getContext('2d'); c.scale(px,px);
-  const tracks = series.map(line => [line, board?.find(r => r.name === line[0])?.bankroll])
+  const {entries, excluded} = scoredView(countSettled());
+  const tracks = series.map(line => [line, entries.find(r => r.name === line[0])?.bankroll])
                        .filter(([[id],points]) => points && selected.has(id));
   const points = tracks.flatMap(([,p]) => p);
   const min = Math.floor(Math.min(-1000,...points)/1000)*1000, max = Math.ceil(Math.max(1000,...points)/1000)*1000;
@@ -255,11 +291,23 @@ function plot() {
     c.fillStyle = '#99b1a3'; c.fillText(sek.format(v),start-8,y(v)+4);
   }
   c.textAlign = 'center';
-  for (let i=0; i<=total; i++) if (w>510 || i%2===0) c.fillText(i===0?'Start':i,x(i),h-10);
+  for (let i=0; i<=total; i++) {
+    if (w>510 || i%2===0 || excluded.has(i)) {
+      c.fillStyle = excluded.has(i) ? '#f5c479' : '#99b1a3';
+      c.fillText(i===0 ? 'Start' : excluded.has(i) ? `${i}*` : i,x(i),h-10);
+    }
+  }
   if (!points.length) c.fillText('The curves start at the first settlement.',(start+end)/2,(top+base)/2-13);
   for (const [[key,,color,dash],bank] of tracks) {
-    c.strokeStyle=color;c.fillStyle=color;c.lineWidth=key==='o4'?3.5:2;c.setLineDash(dash);c.beginPath();
-    bank.forEach((v,i) => i ? c.lineTo(x(i),y(v)) : c.moveTo(x(i),y(v))); c.stroke(); c.setLineDash([]);
+    c.strokeStyle=color;c.fillStyle=color;c.lineWidth=(key==='o4'||key==='o3')?3:2;
+    for (let i=1; i<bank.length; i++) {
+      c.setLineDash(excluded.has(i) ? [3, 5] : dash);
+      c.beginPath();
+      c.moveTo(x(i-1),y(bank[i-1]));
+      c.lineTo(x(i),y(bank[i]));
+      c.stroke();
+    }
+    c.setLineDash([]);
     if (!dash.length) { const i=bank.length-1;c.beginPath();c.arc(x(i),y(bank[i]),3,0,Math.PI*2);c.fill(); }
   }
 }
@@ -272,11 +320,25 @@ for (let i=1; i<=8; i++) {
 for (const [key,label,color,dash] of series) {
   const btn=element('button',null);
   btn.setAttribute('aria-pressed','true');
+  btn.dataset.entry=key;
   const swatch=element('i',null,'swatch');swatch.style.color=color;swatch.style.borderTopStyle=dash.length?'dashed':'solid';
   btn.append(swatch,label);btn.onclick=()=>{
     selected.has(key)?selected.delete(key):selected.add(key);btn.setAttribute('aria-pressed',String(selected.has(key)));plot();
   };$('legend').append(btn);
 }
+function setScoreView(view) {
+  if (!hasMatch) return;
+  scoreView = view;
+  const url = new URL(location.href);
+  if (view === 'all') url.searchParams.set('view', 'all');
+  else url.searchParams.delete('view');
+  history.replaceState(null, '', url);
+  paint();
+}
+
+$('view-matched').onclick=()=>setScoreView('matched');
+$('view-all').onclick=()=>setScoreView('all');
+
 function frame(now) {
   if (!playing) { lastFrame=null; return; }
   const delta = lastFrame == null ? 0 : (now-lastFrame)/1000;

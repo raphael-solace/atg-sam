@@ -45,6 +45,11 @@
     </section>
     <section class="panel performance" id="performance">
       <div class="panel-head"><div><div class="eyebrow" id="settled">0 OF 10 SETTLED</div><h2>Cumulative return</h2></div><span class="pill verified">NET SEK</span></div>
+      <div class="score-view" id="score-view" role="group" aria-label="Scoring view" hidden>
+        <button type="button" id="view-matched" aria-pressed="true">Valid-ticket head-to-head</button>
+        <button type="button" id="view-all" aria-pressed="false">All rounds</button>
+      </div>
+      <p class="score-scope" id="score-scope" hidden></p>
       <div class="leader"><div><span id="lead-caption">LEADER AFTER SETTLEMENT</span><strong id="leader">Awaiting results</strong></div><div class="lead-value"><strong id="leader-roi">—</strong><span id="leader-net"></span></div></div>
       <canvas id="chart" aria-label="Net return by settled week" role="img"></canvas>
       <div class="legend" id="legend" aria-label="Toggle chart series"></div>
@@ -54,7 +59,8 @@
         <div id="match-entries"></div>
         <p>Orchestrator3 is the Claude Opus 5.5 panel. This view excludes rounds with an invalid ticket on either side. The full standings include all rounds and penalties.</p>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Forecaster</th><th>Net SEK</th><th>ROI</th></tr></thead><tbody id="scores"><tr><td colspan="3">Standings arrive with each settlement.</td></tr></tbody></table></div>
+      <div class="standings-scope">Full standings · all rounds and penalties</div>
+      <div class="table-wrap"><table aria-label="Full standings"><thead><tr><th>Forecaster</th><th>Net SEK</th><th>ROI</th></tr></thead><tbody id="scores"><tr><td colspan="3">Standings arrive with each settlement.</td></tr></tbody></table></div>
       <details class="council" id="council" hidden><summary id="council-summary">Latest Astra council panel</summary><div id="experts"></div></details>
     </section>
   </div>
