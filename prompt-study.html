@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V85 Relay · Basic vs optimized prompts</title>
+<style>
+:root{color-scheme:dark;--base:#101715;--panel:#19231f;--line:#2f4137;--text:#e7f3eb;--dim:#a1b8ab;--green:#6ff7ba;--basic:#a8bffd;--loss:#f1ad9d;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--base);color:var(--text);font:15px/1.45 "Geist",system-ui,sans-serif}.page{width:min(1260px,calc(100% - 48px));margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}header strong{letter-spacing:-.04em}a{color:var(--green)}header a{font-size:.8rem}
+h1{font-size:clamp(2.4rem,5.15vw,4.25rem);letter-spacing:-.069em;line-height:1.04;margin:8px 0 6px}h2{font-size:1.26rem;letter-spacing:-.04em;margin:0}p{margin:4px 0;color:var(--dim)}
+.hero{padding:23px 0 15px}.kicker,.small{font:600 .69rem var(--mono);letter-spacing:.09em;color:var(--green);text-transform:uppercase}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}.tag{border:1px solid var(--line);padding:5px 8px;border-radius:6px;font:500 .7rem var(--mono);color:#b3c8bc}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;margin-top:12px}.panel{min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:11px;overflow:hidden}.panel header{padding:14px 16px 9px;border:0;display:block}.panel header p{font-size:.78rem}.pad{padding:6px 16px 12px}.selectors{display:flex;gap:4px;flex-wrap:wrap}.selectors button{padding:4px 7px;cursor:pointer;border:1px solid var(--line);border-radius:5px;background:#1c2c24;color:var(--dim);font:500 .73rem system-ui}.selectors button[aria-pressed=true]{color:#0a2f1d;background:var(--green);border-color:var(--green);font-weight:700}.selectors button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+canvas{width:100%;height:238px;display:block}.legend{font-size:.73rem;display:flex;gap:13px;color:var(--dim)}.legend b{font-weight:700}.basic{color:var(--basic)}.optimized{color:var(--green)}.result-table{margin-top:12px}
+.scroll{overflow:auto}.score{border-collapse:collapse;width:100%;white-space:nowrap;font-variant-numeric:tabular-nums}.score th,.score td{border-top:1px solid var(--line);padding:8px 11px;text-align:right;font-size:.78rem}.score th{color:var(--dim);background:#16221d;font-family:var(--mono);font-size:.67rem}.score :is(td,th):first-child{text-align:left;padding-left:16px}.score :is(td,th):last-child{padding-right:16px}.gain{color:var(--green)}.loss{color:var(--loss)}
+.notes{color:var(--dim);font-size:.8rem;margin:13px 0 25px}.notes p{margin:7px 0}
+@media(max-width:770px){.page{width:calc(100% - 26px)}.grid{grid-template-columns:1fr}.hero h1{letter-spacing:-.06em}}
+</style>
+</head>
+<body>
+<header class="page"><strong>V85 Relay / Prompt study</strong><a href="./" id="replay-link" hidden>← Recorded replay</a></header>
+<main class="page">
+<div class="hero"><div class="kicker">Historical V85 · Matched comparison</div><h1>Did the optimized prompt pay off?</h1>
+<p>Same race cards, model routes and 500 SEK budget. The optimized draft was picked using only the earlier weeks.</p>
+<div class="tags"><span class="tag">8 tuning rounds</span><span class="tag">14 held-out rounds</span><span class="tag">Selected draft · Selective value</span></div></div>
+
+
+
+<div class="grid">
+<section class="panel"><header><h2>Net return across the holdout</h2><p>Choose an entry to compare its two curves, in SEK.</p></header>
+<div class="pad"><div id="selectors" class="selectors"></div><canvas id="curves" role="img" aria-label="Basic and optimized cumulative net SEK by holdout week"></canvas><div class="legend"><b class="basic">━ Basic</b><b class="optimized">━ Optimized</b></div></div></section>
+<section class="panel"><header><h2>Change in net return</h2><p>Optimized minus basic, with paired 95% intervals by week.</p></header><div class="pad"><canvas id="change" role="img" aria-label="Net SEK improvement with paired round bootstrap intervals"></canvas></div></section>
+</div>
+<section class="panel result-table"><header><h2>Held-out ticket results</h2><p>The score includes every paid tier. A ticket that still fails validation after a correction counts as a 500 SEK loss.</p></header>
+<div class="scroll"><table class="score"><thead><tr><th>Entry</th><th>Basic net</th><th>Optimized net</th><th>Change in net</th><th>Basic ROI</th><th>Optimized ROI</th><th>Profitable rounds</th></tr></thead><tbody>
+
+<tr><td><b>GPT-6 Luna</b></td><td>−3,830</td><td>−2,324</td><td class="gain">+1,506 SEK</td><td>−61.1%</td><td>−57.8%</td><td>1 → 3 / 14</td></tr>
+
+<tr><td><b>Claude Haiku 5.5</b></td><td>−3,020</td><td>−2,608</td><td class="gain">+412 SEK</td><td>−64.9%</td><td>−63.9%</td><td>1 → 1 / 14</td></tr>
+
+<tr><td><b>Gemini 3.8 Flash</b></td><td>−2,185</td><td>−1,078</td><td class="gain">+1,108 SEK</td><td>−67.9%</td><td>−35.6%</td><td>2 → 2 / 14</td></tr>
+
+<tr><td><b>Gemini 3.1 Pro</b></td><td>−3,812</td><td>−2,506</td><td class="gain">+1,306 SEK</td><td>−68.8%</td><td>−57.5%</td><td>2 → 2 / 14</td></tr>
+
+<tr><td><b>GPT-6 Luna council</b></td><td>−2,331</td><td>−2,091</td><td class="gain">+240 SEK</td><td>−36.6%</td><td>−33.1%</td><td>2 → 3 / 14</td></tr>
+
+</tbody></table></div></section>
+<section class="panel result-table"><header><h2>Forecast quality and ticket reliability</h2><p>Accuracy and log loss use valid forecasts. Counts disclose missing coverage.</p></header>
+<div class="scroll"><table class="score"><thead><tr><th>Entry</th><th>Top pick accuracy</th><th>Log loss</th><th>Valid legs</th><th>Invalid tickets</th><th>Assessed stake</th></tr></thead><tbody>
+<tr><td><b>GPT-6 Luna</b></td>
+<td>39.3% → 37.5%</td>
+<td>1.831 → 1.815</td>
+<td>112 → 104</td>
+<td>0.0% → 7.1%</td>
+<td>6,264 → 4,022 SEK</td></tr><tr><td><b>Claude Haiku 5.5</b></td>
+<td>40.4% → 36.4%</td>
+<td>1.807 → 1.885</td>
+<td>104 → 88</td>
+<td>7.1% → 21.4%</td>
+<td>4,656 → 4,080 SEK</td></tr><tr><td><b>Gemini 3.8 Flash</b></td>
+<td>39.3% → 34.8%</td>
+<td>1.830 → 1.819</td>
+<td>112 → 112</td>
+<td>0.0% → 0.0%</td>
+<td>3,216 → 3,028 SEK</td></tr><tr><td><b>Gemini 3.1 Pro</b></td>
+<td>39.3% → 40.2%</td>
+<td>1.826 → 1.818</td>
+<td>112 → 112</td>
+<td>0.0% → 0.0%</td>
+<td>5,538 → 4,358 SEK</td></tr><tr><td><b>GPT-6 Luna council</b></td>
+<td>39.3% → 38.4%</td>
+<td>1.797 → 1.794</td>
+<td>112 → 112</td>
+<td>0.0% → 0.0%</td>
+<td>6,366 → 6,318 SEK</td></tr>
+</tbody></table></div></section>
+<div class="notes">
+<details><summary>What changed in the prompt</summary><p>Treat the ticket as a purchase, not as a prize for covering as many wins as possible. Begin by comparing the public V85 distribution with normalized inverse win odds. Correct major disagreements only when the independent signals or pre-race records support the correction. Keep probability shifts small when the evidence is noisy. Use the same probabilities to build your ticket, with extra coverage concentrated where the market appears to underprice plausible winners.
+
+Prioritize a lean ticket. Choose an explicit count for each of the eight legs before naming runners. Prefer a promising smaller ticket to a larger set of expensive combinations that mostly duplicate the crowd. Most legs should have at most three picks; use a fourth only for a leg with several plausible winners. Preserve some chances at the lower prize tiers. Check total rows and stake after your final selections and keep the cost under 500 SEK.</p></details>
+<p>2026-06-20 was excluded because ATG calendar lists no V85 round.</p>
+<p>Tuning ran from 2026-04-04 through 2026-05-23. The holdout ran from 2026-05-30 through 2026-09-05. The draft with the larger median model-level net improvement on tuning rounds was frozen before holdout scoring. On tuning rounds the median change was −193 SEK for the payout-aware draft and +407 SEK for selective value.</p>
+<p>The four models received the original prompt or the same prompt with the selected instructions added. The Luna council used the same engine and ticket builder in both arms, with upstream forecasts from the corresponding prompt and expert selection based on earlier rounds.</p>
+<p>Historical settlement does not establish future profitability. Archived final win odds for later legs may reflect information after V85 ticket sales closed. No real bets were placed.</p>
+</div>
+</main>
+<script id="data" type="application/json">[{"basic": {"accuracy": 0.39285714285714285, "bankroll": [0, -384.0, -870.0, -1164.0, -1332.0, -528.0, -852.0, -1338.0, -1770.0, -2210.0, -2435.0, -2921.0, -3308.0, -3344.0, -3830.0], "cost_sek": 6264.0, "invalid_rate": 0.0, "log_loss": 1.8311652881731446, "mean_correct_legs": 5.142857142857143, "net_sek": -3830.0, "payout_sek": 2434.0, "roi": -0.6114303959131545, "valid_forecast_legs": 112}, "basic_rounds_profitable": 1, "label": "GPT-6 Luna", "name": "gpt6_luna", "optimized": {"accuracy": 0.375, "bankroll": [0, -288.0, -416.0, -602.0, -728.0, -704.0, -776.0, -992.0, -1316.0, -1550.0, -1766.0, -2266.0, -2260.0, -2368.0, -2324.0], "cost_sek": 4022.0, "invalid_rate": 0.07142857142857142, "log_loss": 1.8145997797332827, "mean_correct_legs": 4.928571428571429, "net_sek": -2324.0, "payout_sek": 1698.0, "roi": -0.5778219791148682, "valid_forecast_legs": 104}, "optimized_rounds_profitable": 3, "paired_net_sek_95": [-867.0999999999999, 3412.0], "paired_roi_95": [-0.3466850819781361, 0.3478187797585472]}, {"basic": {"accuracy": 0.40384615384615385, "bankroll": [0, -486.0, -729.0, -1229.0, -1335.5, -443.5, -713.5, -821.5, -1181.5, -1445.5, -1562.5, -1886.5, -2300.5, -2732.5, -3020.5], "cost_sek": 4656.5, "invalid_rate": 0.07142857142857142, "log_loss": 1.8069257516602093, "mean_correct_legs": 4.571428571428571, "net_sek": -3020.5, "payout_sek": 1636.0, "roi": -0.6486631590250188, "valid_forecast_legs": 104}, "basic_rounds_profitable": 1, "label": "Claude Haiku 5.5", "name": "claude_haiku", "optimized": {"accuracy": 0.36363636363636365, "bankroll": [0, -216.0, -344.0, -452.0, 444.0, 92.0, -232.0, -732.0, -894.0, -1394.0, -1544.0, -1640.0, -1784.0, -2284.0, -2608.0], "cost_sek": 4080.0, "invalid_rate": 0.21428571428571427, "log_loss": 1.8852999782938873, "mean_correct_legs": 3.9285714285714284, "net_sek": -2608.0, "payout_sek": 1472.0, "roi": -0.6392156862745098, "valid_forecast_legs": 88}, "optimized_rounds_profitable": 1, "paired_net_sek_95": [-3277.5375, 3736.562499999999], "paired_roi_95": [-0.7145702960291527, 0.8395462822091764]}, {"basic": {"accuracy": 0.39285714285714285, "bankroll": [0, -96.0, -528.0, -672.0, -744.0, -822.0, -1302.0, -1281.0, -1497.0, -1623.0, -1647.0, -1843.0, -2275.0, -2077.0, -2185.0], "cost_sek": 3216.0, "invalid_rate": 0.0, "log_loss": 1.8296376817187985, "mean_correct_legs": 4.928571428571429, "net_sek": -2185.0, "payout_sek": 1031.0, "roi": -0.6794154228855721, "valid_forecast_legs": 112}, "basic_rounds_profitable": 2, "label": "Gemini 3.8 Flash", "name": "gemini", "optimized": {"accuracy": 0.3482142857142857, "bankroll": [0, -36.0, -279.0, -400.5, -488.5, -498.5, -714.5, -765.5, -1197.5, -1221.5, -1245.5, -1407.5, -1569.5, -1305.5, -1077.5], "cost_sek": 3028.5, "invalid_rate": 0.0, "log_loss": 1.8191752784240687, "mean_correct_legs": 5.142857142857143, "net_sek": -1077.5, "payout_sek": 1951.0, "roi": -0.35578669308238403, "valid_forecast_legs": 112}, "optimized_rounds_profitable": 2, "paired_net_sek_95": [62.93750000000006, 2139.5499999999993], "paired_roi_95": [0.06561364120122251, 0.6213989264075029]}, {"basic": {"accuracy": 0.39285714285714285, "bankroll": [0, -432.0, -864.0, -1152.0, -1142.0, -271.0, -703.0, -1042.0, -1447.0, -1834.0, -2294.0, -2780.0, -2996.0, -3380.0, -3812.0], "cost_sek": 5538.0, "invalid_rate": 0.0, "log_loss": 1.826018749437217, "mean_correct_legs": 5.071428571428571, "net_sek": -3812.0, "payout_sek": 1726.0, "roi": -0.6883351390393644, "valid_forecast_legs": 112}, "basic_rounds_profitable": 2, "label": "Gemini 3.1 Pro", "name": "gemini_pro", "optimized": {"accuracy": 0.4017857142857143, "bankroll": [0, -384.0, -748.5, -1072.5, -1064.5, -193.5, -625.5, -841.5, -1003.5, -1345.5, -1555.5, -1798.5, -2056.5, -2344.5, -2506.5], "cost_sek": 4357.5, "invalid_rate": 0.0, "log_loss": 1.8183511388931155, "mean_correct_legs": 5.142857142857143, "net_sek": -2506.5, "payout_sek": 1851.0, "roi": -0.5752151462994837, "valid_forecast_legs": 112}, "optimized_rounds_profitable": 2, "paired_net_sek_95": [550.9875, 2126.0], "paired_roi_95": [-0.0030190291113619564, 0.26346875399355063]}, {"basic": {"accuracy": 0.39285714285714285, "bankroll": [0, -96.0, -440.0, -788.0, 562.0, 292.0, -140.0, -386.0, -764.0, -1106.0, -1385.0, -1737.0, -2037.0, -2397.0, -2331.0], "cost_sek": 6366.0, "invalid_rate": 0.0, "log_loss": 1.7965849276362285, "mean_correct_legs": 5.571428571428571, "net_sek": -2331.0, "payout_sek": 4035.0, "roi": -0.3661639962299717, "valid_forecast_legs": 112}, "basic_rounds_profitable": 2, "label": "GPT-6 Luna council", "name": "luna_council", "optimized": {"accuracy": 0.38392857142857145, "bankroll": [0, 144.0, -200.0, -548.0, 802.0, 532.0, 100.0, -146.0, -524.0, -866.0, -1145.0, -1497.0, -1797.0, -2157.0, -2091.0], "cost_sek": 6318.0, "invalid_rate": 0.0, "log_loss": 1.7943112985583676, "mean_correct_legs": 5.571428571428571, "net_sek": -2091.0, "payout_sek": 4227.0, "roi": -0.3309591642924976, "valid_forecast_legs": 112}, "optimized_rounds_profitable": 3, "paired_net_sek_95": [0.0, 720.0], "paired_roi_95": [0.0, 0.11149935498434409]}]</script>
+<script>
+'use strict';
+const data=JSON.parse(document.getElementById('data').textContent);
+const $=id=>document.getElementById(id);
+if(location.pathname.includes('/atg-sam/'))$('replay-link').hidden=false;
+const format=n=>new Intl.NumberFormat('en',{maximumFractionDigits:0,signDisplay:'exceptZero'}).format(n);
+let active=0;
+function canvas(id,draw){
+ const cn=$(id),w=cn.clientWidth,h=cn.clientHeight,px=devicePixelRatio||1;
+ cn.width=w*px;cn.height=h*px;
+ const c=cn.getContext('2d');c.scale(px,px);c.font='11px system-ui';draw(c,w,h);
+}
+function line(c,x,y,X,Y,color,width=1){c.beginPath();c.strokeStyle=color;c.lineWidth=width;c.moveTo(x,y);c.lineTo(X,Y);c.stroke();}
+function curve(){
+ canvas('curves',(c,w,h)=>{
+  const a=data[active], points=[...a.basic.bankroll,...a.optimized.bankroll];
+  const lo=Math.min(-300,...points),hi=Math.max(300,...points),step=Math.pow(10,Math.floor(Math.log10((hi-lo)/3)));
+  const min=Math.floor(lo/step)*step,max=Math.ceil(hi/step)*step;
+  const win=max-min, left=65,right=w-14,top=15,bottom=h-27;
+  const X=i=>left+(right-left)*i/(a.basic.bankroll.length-1),Y=n=>bottom-(bottom-top)*(n-min)/win;
+  c.fillStyle='#a1b8ab';c.textAlign='right';
+  for(let j=0;j<=4;j++){const n=min+j*win/4;line(c,left,Y(n),right,Y(n),'#31453a');c.fillText(format(n),left-7,Y(n)+4);}
+  line(c,left,Y(0),right,Y(0),'#627c6c');
+  c.textAlign='center';for(let i=0;i<a.basic.bankroll.length;i++)if(i===0||i%3===0)c.fillText(i?i:'Start',X(i),h-7);
+  for(const [series,color] of [[a.basic.bankroll,'#a8bffd'],[a.optimized.bankroll,'#6ff7ba']]){
+   c.strokeStyle=color;c.lineWidth=2.4;c.beginPath();
+   series.forEach((n,i)=>i?c.lineTo(X(i),Y(n)):c.moveTo(X(i),Y(n)));c.stroke();
+   c.fillStyle=color;c.beginPath();const i=series.length-1;c.arc(X(i),Y(series[i]),3,0,Math.PI*2);c.fill();
+  }
+ });
+}
+function change(){
+ canvas('change',(c,w,h)=>{
+  const values=data.flatMap(r=>r.paired_net_sek_95),min=Math.min(0,...values),max=Math.max(1,...values);
+  const left=Math.min(143,w*.35),right=w-26,top=8,bottom=h-33;
+  const X=n=>left+(right-left)*(n-min)/(max-min);
+  line(c,X(0),top,X(0),bottom,'#77907e');
+  data.forEach((r,i)=>{
+   const y=top+(bottom-top)*(i+.5)/data.length;
+   const v=r.optimized.net_sek-r.basic.net_sek,[a,b]=r.paired_net_sek_95;
+   c.fillStyle='#b3c8bc';c.textAlign='right';c.fillText(r.label,left-8,y+4,left-10);
+   line(c,X(a),y,X(b),y,'#779683',2);line(c,X(a),y-4,X(a),y+4,'#779683');line(c,X(b),y-4,X(b),y+4,'#779683');
+   c.fillStyle=v<0?'#f1ad9d':'#6ff7ba';c.beginPath();c.arc(X(v),y,4,0,Math.PI*2);c.fill();
+  });
+  c.fillStyle='#a1b8ab';c.textAlign='center';for(const n of [min,0,max])c.fillText(format(n),X(n),h-9);
+ });
+}
+data.forEach((r,i)=>{
+ const btn=document.createElement('button');btn.type='button';btn.textContent=r.label;
+ btn.setAttribute('aria-pressed',String(i===active));
+ btn.onclick=()=>{active=i;Array.from($('selectors').children).forEach((b,j)=>b.setAttribute('aria-pressed',String(j===i)));curve();};
+ $('selectors').append(btn);
+});
+new ResizeObserver(curve).observe($('curves'));new ResizeObserver(change).observe($('change'));
+</script>
+</body>
+</html>
