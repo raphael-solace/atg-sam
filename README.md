@@ -17,4 +17,4 @@ The replay displays the demo's proposed ATG-style topic addresses. The roots fol
 
 **Orchestrator3** is the Claude Opus 5.5 panel. Its head-to-head comparison with GPT-6 Luna includes rounds where both submitted valid tickets. The full leaderboard retains all ten rounds and applies the original penalty for each invalid ticket.
 
-The chart and standings compare Orchestrator3 and GPT-6 Luna on the ten-week timeline, counting weeks where both tickets were valid. Dashed segments indicate excluded weeks. The archived event log retains the full ten-round results and penalties.
+The chart and standings include every benchmarked entry on the ten-week timeline. All scores use the same weeks where Orchestrator3 and GPT-6 Luna both submitted valid tickets. Dashed segments indicate excluded weeks. Forecast-only entries have log loss but no net return or ROI. The archived event log retains the full ten-round results and penalties.
