@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Replay recorded V85 model decisions and outcomes, one Solace topic at a time.">
 <title>V85 Relay · Solace replay</title>
-<link rel="stylesheet" href="style.css">
-<script defer src="app.js"></script>
+<link rel="stylesheet" href="style.css?v=3">
+<script defer src="app.js?v=3"></script>
 </head>
 <body>
 <header class="page mast"><div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> V85 Relay <span class="split">/</span> <small>SOLACE PUBSUB+</small></div><span class="source"><i></i><span id="source">Recorded replay</span></span></header>
@@ -45,11 +45,10 @@
     </section>
     <section class="panel performance" id="performance">
       <div class="panel-head"><div><div class="eyebrow" id="settled">0 OF 10 SETTLED</div><h2>Cumulative return</h2></div><span class="pill verified">NET SEK</span></div>
-      <p class="score-scope" id="score-scope" hidden></p>
-      <div class="leader"><div><span id="lead-caption">LEADER AFTER SETTLEMENT</span><strong id="leader">Awaiting results</strong></div><div class="lead-value"><strong id="leader-roi">—</strong><span id="leader-net"></span></div></div>
-      <canvas id="chart" aria-label="Net return by settled week" role="img"></canvas>
+      <div class="leader"><div><span id="lead-caption">HIGHEST ROI</span><strong id="leader">Awaiting results</strong></div><div class="lead-value"><strong id="leader-roi">—</strong><span id="leader-net"></span></div></div>
+      <canvas id="chart" aria-label="Cumulative net return by settled week, including invalid-ticket penalties" role="img"></canvas>
       <div class="legend" id="legend" aria-label="Chart series"></div>
-      <div class="table-wrap"><table aria-label="Standings"><thead><tr><th>Forecaster</th><th>Net SEK</th><th>ROI</th><th title="Lower is better">Log loss</th></tr></thead><tbody id="scores"><tr><td colspan="4">Standings arrive with each settlement.</td></tr></tbody></table></div>
+      <div class="table-wrap"><table aria-label="Standings"><thead><tr><th scope="col">Forecaster</th><th scope="col">ROI rank</th><th scope="col">Net SEK</th><th scope="col">ROI</th><th scope="col" title="Lower is better">Log loss</th></tr></thead><tbody id="scores"><tr><td colspan="5">Standings arrive with each settlement.</td></tr></tbody></table></div>
     </section>
   </div>
   <footer><span id="basis">Archived backtest · Anonymized runners · No bets placed</span><span>Ten rounds · Returns are indicative</span></footer>

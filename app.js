@@ -40,8 +40,7 @@ const sek = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 0, signDispla
 const pct = new Intl.NumberFormat('en-GB', {style: 'percent', maximumFractionDigits: 1, minimumFractionDigits: 1, signDisplay: 'exceptZero'});
 const fmtTime = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 let replay = [], settlements = [], playing = false, elapsed = 0, cursor = 0, lastFrame = null;
-let roundKey, roundNo, legNo, cards, winners, board, headToHead, phase, imported = false;
-let hasMatch = false;
+let roundKey, roundNo, legNo, cards, winners, board, settled, phase, imported = false;
 
 function element(tag, content, className) {
   const node = document.createElement(tag);
@@ -62,7 +61,7 @@ function clear() {
   roundKey = null;
   roundNo = 1;
   board = [];
-  headToHead = null;
+  settled = 0;
   clearRound();
   phase = 'Ready to replay';
   $('feed').replaceChildren(element('div', 'Press Play to receive the first race card.', 'placeholder'));
@@ -82,7 +81,6 @@ function install(events, personal) {
   imported = personal;
   replay = ordered;
   settlements = rounds;
-  hasMatch = Boolean(rounds.at(-1).payload.head_to_head?.matched_rounds);
   $('source').textContent = personal ? 'Local event log' : 'Recorded replay';
   $('basis').textContent = personal ? 'Local event log · Read in this browser only' : 'Archived backtest · Anonymized runners · No bets placed';
   $('play').disabled = $('restart').disabled = false;
@@ -114,14 +112,22 @@ function pushEvent(evt, type, title, details = null) {
   if ($('feed').children.length > 56) $('feed').lastChild.remove();
 }
 
+function scoreRows(standings) {
+  const entries = standings.filter(row => row.strategy !== 'builder')
+    .sort((a, b) => (b.roi ?? -Infinity) - (a.roi ?? -Infinity));
+  return entries.map(row => ({
+    ...row,
+    label: row.name === 'o3' ? 'Orchestrator3' : row.label,
+    rank: row.roi == null ? null : entries.findIndex(entry => entry.roi === row.roi) + 1,
+  }));
+}
+
 function receive(evt) {
   const p = evt.payload;
   const {kind, key, detail: n} = evt.address;
   if (kind === 'leaderboard') {
-    board = p.standings.filter(r => r.strategy !== 'builder' && typeof r.roi === 'number')
-              .map(r => r.name === 'o3' ? {...r, label:'Orchestrator3'} : r);
-    headToHead = p.head_to_head;
-    roundNo = p.after_round;
+    board = scoreRows(p.standings);
+    settled = roundNo = p.after_round;
     phase = 'Round settled';
     pushEvent(evt, 'settled', `Week ${roundNo} · Standings updated`);
     return;
@@ -168,50 +174,24 @@ function paintClock() {
   if ($('time').textContent !== next) $('time').textContent = next;
 }
 
-function countSettled() {
-  return board?.[0] ? board[0].bankroll.length - 1 : 0;
-}
-
-function benchmarked(pair) {
-  return pair?.benchmarked ?? pair?.entries ?? [];
-}
-
-function scoredView(settled) {
-  if (!hasMatch) return {entries: board || [], excluded: new Set()};
-  const history = settlements.slice(0, settled).map(event => event.payload.head_to_head);
-  const excluded = new Set();
-  history.forEach((pair, i) => {
-    if ((pair?.matched_rounds || 0) === (history[i-1]?.matched_rounds || 0)) excluded.add(i+1);
-  });
-  const entries = benchmarked(headToHead).map(entry => ({
-    ...entry,
-    bankroll: typeof entry.roi === 'number'
-      ? [0, ...history.map(pair => benchmarked(pair).find(row => row.name === entry.name)?.net_sek ?? 0)]
-      : [],
-  })).sort((a,b) => (b.roi ?? -Infinity) - (a.roi ?? -Infinity));
-  return {entries, excluded};
-}
-
 function paint() {
   if (!replay.length) return;
-  const settled = countSettled();
   const done = cursor === replay.length;
-  const {entries} = scoredView(settled);
-  const lead = entries[0];
-  $('score-scope').hidden = !hasMatch;
-  $('score-scope').textContent = `${headToHead?.matched_rounds || 0} of ${settlements.length} rounds · Orchestrator3 and GPT-6 Luna both valid`;
-  $('chart').setAttribute('aria-label', hasMatch ? 'All net return curves, counting weeks where Orchestrator3 and GPT-6 Luna both had valid tickets' : 'Net return by settled week, including invalid tickets');
-  $('legend').querySelector('[data-entry="others"]').hidden = !entries.some(row => row.bankroll.length && !series.has(row.name));
+  const featured = board.find(row => row.name === 'o3');
+  const focus = featured || board.find(row => row.rank === 1);
+  const entries = featured ? [featured, ...board.filter(row => row !== featured)] : board;
+  $('legend').querySelector('[data-entry="others"]').hidden = !board.some(row => row.bankroll.length && !series.has(row.name));
   $('play').textContent = playing ? 'Pause' : done ? 'Replay' : cursor ? 'Resume' : 'Play replay';
   paintClock();
   $('event-count').textContent = `${cursor} / ${replay.length} events`;
   $('round').textContent = 'Round ' + String(roundNo).padStart(2, '0');
   $('phase').textContent = done ? 'Replay complete' : phase;
   $('settled').textContent = `${settled} OF ${settlements.length} SETTLED`;
-  $('lead-caption').textContent = done ? 'WINNER BY ROI' : 'LEADER AFTER SETTLEMENT';
-  $('leader').textContent = lead?.label || 'Awaiting results';
-  $('leader-roi').textContent = lead ? pct.format(lead.roi) : '—';
-  $('leader-net').textContent = lead ? `${sek.format(lead.net_sek)} SEK` : '';
+  const hasReturn = focus?.rank != null;
+  $('lead-caption').textContent = featured ? 'FEATURED AGENT' : 'HIGHEST ROI';
+  $('leader').textContent = focus?.label || 'Awaiting results';
+  $('leader-roi').textContent = hasReturn ? pct.format(focus.roi) : '—';
+  $('leader-net').textContent = hasReturn ? `#${focus.rank} by ROI · ${sek.format(focus.net_sek)} SEK` : '';
   Array.from($('weeks').children).forEach((btn,i) => {
     btn.classList.toggle('done', i < settled); btn.classList.toggle('active', i + 1 === roundNo);
   });
@@ -225,10 +205,11 @@ function paint() {
     ...card.map(r => element('span', r.text || r, `runner${winners[legNo]?.includes(r.id || r) ? ' hit' : ''}`))
   ] : [element('span', 'Runner options appear with the race card.')]));
   const rows = entries.map(r => {
-    const row = element('tr', null, r.name === 'o3' || r.group === 'Orchestrator' ? 'orch' : '');
-    const staked = typeof r.roi === 'number';
+    const row = element('tr', null, r.name === 'o3' ? 'featured' : r.group === 'Orchestrator' ? 'orch' : '');
+    const staked = r.rank != null;
     row.append(
       element('td', r.label),
+      element('td', staked ? `#${r.rank}` : '—'),
       element('td', staked ? sek.format(r.net_sek) : '—', staked ? (r.net_sek > 0 ? 'gain' : 'loss') : ''),
       element('td', staked ? pct.format(r.roi) : '—', staked ? (r.roi > 0 ? 'gain' : 'loss') : ''),
       element('td', r.log_loss == null ? '—' : r.log_loss.toFixed(3)),
@@ -238,7 +219,7 @@ function paint() {
   if (rows.length) $('scores').replaceChildren(...rows);
   else {
     const cell = element('td', 'Standings arrive with each settlement.');
-    cell.colSpan = 4;
+    cell.colSpan = 5;
     const row = element('tr'); row.append(cell); $('scores').replaceChildren(row);
   }
   plot();
@@ -249,9 +230,9 @@ function plot() {
   if (!w || !h) return;
   cn.width = w * px; cn.height = h * px;
   const c = cn.getContext('2d'); c.scale(px,px);
-  const {entries, excluded} = scoredView(countSettled());
-  const tracks = entries.filter(entry => entry.bankroll.length > 1)
-                        .sort((a,b) => Number(series.has(a.name)) - Number(series.has(b.name)));
+  const tickets = (board || []).filter(entry => entry.bankroll.length > 1);
+  const tracks = [...tickets.filter(entry => !series.has(entry.name)),
+                  ...[...series.keys()].reverse().map(name => tickets.find(entry => entry.name === name)).filter(Boolean)];
   const points = tracks.flatMap(entry => entry.bankroll);
   const min = Math.floor(Math.min(-1000,...points)/1000)*1000, max = Math.ceil(Math.max(1000,...points)/1000)*1000;
   const total = settlements.length || 10, start = 61, end = w - 18, base = h - 31, top = 16;
@@ -263,9 +244,9 @@ function plot() {
   }
   c.textAlign = 'center';
   for (let i=0; i<=total; i++) {
-    if (w>510 || i%2===0 || excluded.has(i)) {
-      c.fillStyle = excluded.has(i) ? '#f5c479' : '#99b1a3';
-      c.fillText(i===0 ? 'Start' : excluded.has(i) ? `${i}*` : i,x(i),h-10);
+    if (w>510 || i%2===0 || i===total) {
+      c.fillStyle = '#99b1a3';
+      c.fillText(i===0 ? 'Start' : i,x(i),h-10);
     }
   }
   if (!points.length) c.fillText('The curves start at the first settlement.',(start+end)/2,(top+base)/2-13);
@@ -275,14 +256,10 @@ function plot() {
     c.strokeStyle = color; c.fillStyle = color;
     c.globalAlpha = primary ? 1 : .48;
     c.lineWidth = primary ? 2.6 : 1.15;
-    for (let i=1; i<bank.length; i++) {
-      c.setLineDash(excluded.has(i) ? [3, 5] : []);
-      c.beginPath();
-      c.moveTo(x(i-1),y(bank[i-1]));
-      c.lineTo(x(i),y(bank[i]));
-      c.stroke();
-    }
-    c.setLineDash([]);
+    c.beginPath();
+    c.moveTo(x(0),y(bank[0]));
+    for (let i=1; i<bank.length; i++) c.lineTo(x(i),y(bank[i]));
+    c.stroke();
     if (primary) { const i=bank.length-1;c.beginPath();c.arc(x(i),y(bank[i]),3,0,Math.PI*2);c.fill(); }
   }
   c.globalAlpha = 1;
@@ -334,7 +311,7 @@ $('file').onchange=async event=>{
   event.target.value='';
 };
 new ResizeObserver(plot).observe($('chart'));
-fetch('replay.json').then(response=>{
+fetch('replay.json?v=3').then(response=>{
   if (!response.ok) throw Error('The recorded replay could not load.');
   return response.json();
 }).then(data=>{ if(!imported) install(data.events,false); }).catch(e=>{ $('notice').textContent=e.message; });

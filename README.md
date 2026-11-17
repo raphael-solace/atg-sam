@@ -15,6 +15,4 @@ The **Prompt study** page compares basic and selective-value prompting in a sepa
 
 The replay displays the demo's proposed ATG-style topic addresses. The roots follow Solace’s domain, object, action, and version pattern. Race cards and official results use the racing namespace, pool settlement uses betting, and simulated model proposals and standings use analytics. These names do not describe a verified ATG production catalog.
 
-**Orchestrator3** is the Claude Opus 5.5 panel. Its head-to-head comparison with GPT-6 Luna includes rounds where both submitted valid tickets. The full leaderboard retains all ten rounds and applies the original penalty for each invalid ticket.
-
-The chart and standings include every benchmarked entry on the ten-week timeline. All scores use the same weeks where Orchestrator3 and GPT-6 Luna both submitted valid tickets. Dashed segments indicate excluded weeks. Forecast-only entries have log loss but no net return or ROI. The archived event log retains the full ten-round results and penalties.
+The chart and standings count all ten rounds, including the original penalties for invalid tickets. The featured **Orchestrator3** entry, the Claude Opus 5.5 panel, appears first in the table with its recorded ROI rank. Other entries are listed in ROI order. The two market forecasts are scored by log loss and have no bankroll curve.
