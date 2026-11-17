@@ -9,3 +9,5 @@ The bundled replay uses anonymized options and displays real historical decision
 The GPT-6 Astra council routes to one available GPT, Gemini and Claude forecast using results from earlier rounds only. Astra weights the selected forecasts and public markets for each leg. A common ticket builder applies the budget. The market-only control uses the same engine and builder with only the two market signals.
 
 The **Prompt study** page compares basic and selective-value prompting in a separate matched backtest. Only aggregate model performance and the prompt change are published.
+
+**Ticket builders** compares the original coverage builder, a payout-aware builder at exactly the same stake, and a selective policy on a separate 15-round holdout. The Pages deployment contains aggregate performance only.

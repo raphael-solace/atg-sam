@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V85 Relay · Payout-aware ticket study</title>
+<style>
+:root{color-scheme:dark;--bg:#101715;--panel:#19231f;--line:#2f4137;--text:#e7f3eb;--dim:#a1b8ab;--green:#6ff7ba;--blue:#a8bffd;--gold:#f5c479;--loss:#f1ad9d;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 "Geist",system-ui,sans-serif}.page{width:min(1260px,calc(100% - 48px));margin:auto}
+header.page{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px 0;border-bottom:1px solid var(--line)}header strong{letter-spacing:-.04em}a{color:var(--green)}nav{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem}
+h1{font-size:clamp(2.45rem,5.12vw,4.15rem);letter-spacing:-.061em;line-height:1.04;margin:8px 0 7px}h2{font-size:1.26rem;letter-spacing:-.04em;margin:0}p{margin:4px 0;color:var(--dim)}
+.hero{padding:25px 0 16px}.kicker,.small{font:600 .69rem var(--mono);letter-spacing:.09em;color:var(--green);text-transform:uppercase}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.tag{border:1px solid var(--line);padding:5px 8px;border-radius:6px;font:500 .7rem var(--mono);color:#b3c8bc}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.card,.panel{min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:11px;overflow:hidden}.card{padding:12px 15px}.card strong{display:block;font-size:1.35rem;line-height:1.2;margin:5px 0;letter-spacing:-.034em}.card p{font-size:.75rem}.card.feature{background:#23372c;border-color:#3a5746}
+.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;margin:11px 0}.panel header{padding:14px 16px 8px}.panel header p{font-size:.79rem}.pad{padding:6px 16px 12px}.selectors{display:flex;gap:4px;flex-wrap:wrap}.selectors button{padding:4px 7px;cursor:pointer;border:1px solid var(--line);border-radius:5px;background:#1c2c24;color:var(--dim);font:500 .73rem system-ui}.selectors button[aria-pressed=true]{color:#0a2f1d;background:var(--green);border-color:var(--green);font-weight:700}.selectors button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+canvas{width:100%;height:238px;display:block}.legend{font-size:.72rem;display:flex;gap:11px;flex-wrap:wrap;color:var(--dim)}.coverage{color:var(--blue)}.payout{color:var(--green)}.gated{color:var(--gold)}
+.scroll{overflow:auto}.score{border-collapse:collapse;width:100%;white-space:nowrap;font-variant-numeric:tabular-nums}.score th,.score td{border-top:1px solid var(--line);padding:8px 11px;text-align:right;font-size:.79rem}.score th{color:var(--dim);background:#16221d;font-family:var(--mono);font-size:.66rem}.score th:last-child,.score td:last-child{padding-right:16px}.score :is(td,th):first-child{padding-left:16px;text-align:left}.score :is(td,th):nth-child(2){text-align:left}.score tr.marker td{border-top-color:#506556}.gain{color:var(--green)}.loss{color:var(--loss)}
+.notes{font-size:.79rem;margin:15px 0 30px}.notes p{margin:6px 0}.notes summary{cursor:pointer;color:var(--text)}
+@media(max-width:850px){.page{width:calc(100% - 26px)}.grid{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.card strong{font-size:1.16rem}.card{padding:8px 12px}}
+</style>
+</head>
+<body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<header class="page"><strong>V85 Relay / Ticket builders</strong><nav id="web-nav" hidden><a href="./">Recorded replay</a><a href="prompt-study.html">Prompt study</a></nav></header>
+<main class="page">
+<div class="hero">
+<div class="kicker">Official ATG · Matched backtest</div>
+<h1>Do better tickets pay better?</h1>
+<p>Same LiteLLM forecasts and official payouts. The matched builder changes horse selection at the exact same stake.</p>
+<div class="tags"><span class="tag">8 development rounds</span><span class="tag">15 held-out rounds</span><span class="tag">2025-12-20 to 2026-03-28</span></div>
+</div>
+<div class="cards">
+<div class="card feature"><span class="small">Best payout-aware net with stakes</span><strong>−764 SEK</strong><p>Claude Haiku 5.5 · Payout-aware · selective · −70.7% ROI</p></div>
+<div class="card"><span class="small">Profitable payout-aware entries</span><strong>0 / 8</strong><p>Same-stake and selective policy pairs, pooled over the holdout.</p></div>
+<div class="card"><span class="small">Selective starts</span><strong>16 / 60</strong><p>Model and round decisions that cleared the projected payout hurdle.</p></div>
+</div>
+<div class="grid">
+<section class="panel"><header><h2>Bankroll on the holdout</h2><p>Select a forecaster to compare its ticket policies. All values in SEK.</p></header><div class="pad">
+<div id="selectors" class="selectors"></div><canvas id="curve" role="img" aria-label="Net SEK after each held-out round"></canvas><div id="legend" class="legend"></div>
+</div></section>
+<section class="panel"><header><h2>Effect of changing the picks</h2><p>Net change at the same stake, with paired 95% intervals by round.</p></header><div class="pad">
+<canvas id="effect" role="img" aria-label="Payout-aware minus coverage net SEK at the same stake"></canvas>
+</div></section>
+</div>
+<section class="panel"><header><h2>Official settlement</h2><p>The selective policy can leave a round unplayed. An entry with no stake has no ROI.</p></header>
+<div class="scroll"><table class="score"><thead><tr><th>Forecast</th><th>Ticket policy</th><th>Rounds played</th><th>Profitable rounds</th><th>Stake SEK</th><th>Payout SEK</th><th>Net SEK</th><th>ROI</th></tr></thead><tbody>
+<tr class="marker">
+<td><b>GPT-6 Luna</b></td><td>Coverage builder</td><td>15/15</td><td>1</td><td>6,744</td><td>1,502</td>
+<td class="loss">−5,242</td><td>−77.7%</td>
+</tr><tr>
+<td></td><td>Payout-aware · same stake</td><td>15/15</td><td>0</td><td>6,744</td><td>619</td>
+<td class="loss">−6,125</td><td>−90.8%</td>
+</tr><tr>
+<td></td><td>Payout-aware · selective</td><td>5/15</td><td>0</td><td>1,524</td><td>256</td>
+<td class="loss">−1,268</td><td>−83.2%</td>
+</tr><tr class="marker">
+<td><b>Claude Haiku 5.5</b></td><td>Coverage builder</td><td>15/15</td><td>1</td><td>6,696</td><td>1,652</td>
+<td class="loss">−5,044</td><td>−75.3%</td>
+</tr><tr>
+<td></td><td>Payout-aware · same stake</td><td>15/15</td><td>0</td><td>6,696</td><td>916</td>
+<td class="loss">−5,780</td><td>−86.3%</td>
+</tr><tr>
+<td></td><td>Payout-aware · selective</td><td>3/15</td><td>0</td><td>1,080</td><td>316</td>
+<td class="loss">−764</td><td>−70.7%</td>
+</tr><tr class="marker">
+<td><b>Gemini 3.8 Flash</b></td><td>Coverage builder</td><td>15/15</td><td>1</td><td>6,642</td><td>1,502</td>
+<td class="loss">−5,140</td><td>−77.4%</td>
+</tr><tr>
+<td></td><td>Payout-aware · same stake</td><td>15/15</td><td>0</td><td>6,642</td><td>1,146</td>
+<td class="loss">−5,496</td><td>−82.7%</td>
+</tr><tr>
+<td></td><td>Payout-aware · selective</td><td>4/15</td><td>0</td><td>1,404</td><td>136</td>
+<td class="loss">−1,268</td><td>−90.3%</td>
+</tr><tr class="marker">
+<td><b>Mean of 3 LiteLLM forecasts</b></td><td>Coverage builder</td><td>15/15</td><td>1</td><td>6,696</td><td>1,652</td>
+<td class="loss">−5,044</td><td>−75.3%</td>
+</tr><tr>
+<td></td><td>Payout-aware · same stake</td><td>15/15</td><td>0</td><td>6,696</td><td>741</td>
+<td class="loss">−5,955</td><td>−88.9%</td>
+</tr><tr>
+<td></td><td>Payout-aware · selective</td><td>4/15</td><td>0</td><td>1,164</td><td>136</td>
+<td class="loss">−1,028</td><td>−88.3%</td>
+</tr>
+</tbody></table></div></section>
+<div class="notes">
+<details><summary>How the builder models the pools</summary>
+<p>The coverage builder adds picks to maximize the chance of covering all eight winners. The payout-aware builder simulates winners from the same forecasts and estimates how many public rows would share each of the four prize tiers. It swaps selections to improve estimated cash return within each ticket’s original leg widths. The selective policy also tries smaller systems and only plays when a separate simulation projects at least a 5% margin.</p>
+<p>The opponent estimates, turnover model and payout cap were frozen from 2025-10-25 through 2025-12-13. The simulated payouts use a conservative cap to limit sensitivity to very rare outcomes. Every played ticket is scored using the historical dividends ATG actually posted, across five through eight correct.</p>
+<p>Three LiteLLM routes forecast from anonymized form fields and final V85 shares. Later individual leg win odds were omitted. When a forecast could not be validated, both builders used the same public shares for that entry. The ensemble averages the three distributions. The archive does not provide a time series of prices and scratchings before V85 closed.</p>
+</details>
+<p>Pool estimates assume public rows can be approximated from the individual leg shares. The 15-round sample and the simulated payout model limit conclusions about future returns.</p>
+</div>
+</main>
+<script id="data" type="application/json">[{"fallback_rounds": 0, "label": "GPT-6 Luna", "name": "gpt6_luna", "policies": {"coverage": {"bankroll": [0, -432.0, -852.0, -1221.0, -1517.0, -1751.0, -2111.0, -2543.0, -2975.0, -2688.0, -3120.0, -3552.0, -3904.0, -4324.0, -4810.0, -5242.0], "delta_95": [0.0, 0.0], "delta_sek": 0.0, "net_95": [-6281.0, -3675.0], "net_sek": -5242.0, "payout_sek": 1502.0, "played": 15, "positive_rounds": 1, "roi": -0.7772835112692764, "roi_95": [-0.9392477550184856, -0.5380910683012259], "stake_sek": 6744.0, "top_payout_sek": 773.0}, "gated": {"bankroll": [0, -240.0, -240.0, -240.0, -536.0, -536.0, -536.0, -536.0, -536.0, -536.0, -536.0, -860.0, -860.0, -1076.0, -1076.0, -1268.0], "delta_95": [2359.95, 5362.024999999998], "delta_sek": 3974.0, "net_95": [-2236.0, -408.0], "net_sek": -1268.0, "payout_sek": 256.0, "played": 5, "positive_rounds": 0, "roi": -0.8320209973753281, "roi_95": [-1.0, -0.6797385620915033], "stake_sek": 1524.0, "top_payout_sek": 136.0}, "payout": {"bankroll": [0, -432.0, -918.0, -1350.0, -1646.0, -1880.0, -2312.0, -2744.0, -3176.0, -3647.0, -3923.0, -4355.0, -4787.0, -5207.0, -5693.0, -6125.0], "delta_95": [-2555.0, 187.0], "delta_sek": -883.0, "net_95": [-6641.025, -5525.950000000004], "net_sek": -6125.0, "payout_sek": 619.0, "played": 15, "positive_rounds": 0, "roi": -0.908214709371293, "roi_95": [-0.9820466786355476, -0.8162771867575128], "stake_sek": 6744.0, "top_payout_sek": 252.0}}}, {"fallback_rounds": 0, "label": "Claude Haiku 5.5", "name": "claude_haiku", "policies": {"coverage": {"bankroll": [0, -432.0, -852.0, -1221.0, -1517.0, -1877.0, -2237.0, -2669.0, -2825.0, -2538.0, -2970.0, -3402.0, -3754.0, -4126.0, -4612.0, -5044.0], "delta_95": [0.0, 0.0], "delta_sek": 0.0, "net_95": [-6134.0, -3480.975000000002], "net_sek": -5044.0, "payout_sek": 1652.0, "played": 15, "positive_rounds": 1, "roi": -0.7532855436081243, "roi_95": [-0.9192065363221498, -0.513225379757638], "stake_sek": 6696.0, "top_payout_sek": 773.0}, "gated": {"bankroll": [0, -252.0, -252.0, -252.0, -548.0, -548.0, -548.0, -548.0, -548.0, -548.0, -548.0, -764.0, -764.0, -764.0, -764.0, -764.0], "delta_95": [2635.0, 5622.0], "delta_sek": 4280.0, "net_95": [-1616.0, 0.0], "net_sek": -764.0, "payout_sek": 316.0, "played": 3, "positive_rounds": 0, "roi": -0.7074074074074074, "roi_95": [-1.0, -0.5833333333333334], "stake_sek": 1080.0, "top_payout_sek": 180.0}, "payout": {"bankroll": [0, -252.0, -738.0, -1107.0, -1403.0, -1763.0, -2195.0, -2627.0, -2783.0, -3254.0, -3686.0, -4118.0, -4490.0, -4862.0, -5348.0, -5780.0], "delta_95": [-2426.0, 360.0], "delta_sek": -736.0, "net_95": [-6411.0, -5072.0], "net_sek": -5780.0, "payout_sek": 916.0, "played": 15, "positive_rounds": 0, "roi": -0.8632019115890084, "roi_95": [-0.948, -0.7641857996944592], "stake_sek": 6696.0, "top_payout_sek": 276.0}}}, {"fallback_rounds": 0, "label": "Gemini 3.8 Flash", "name": "gemini", "policies": {"coverage": {"bankroll": [0, -432.0, -852.0, -1221.0, -1517.0, -1751.0, -2111.0, -2543.0, -2975.0, -2688.0, -3120.0, -3552.0, -3904.0, -4276.0, -4708.0, -5140.0], "delta_95": [0.0, 0.0], "delta_sek": 0.0, "net_95": [-6140.0, -3597.0], "net_sek": -5140.0, "payout_sek": 1502.0, "played": 15, "positive_rounds": 1, "roi": -0.7738632941884974, "roi_95": [-0.9380692167577414, -0.5331822751322755], "stake_sek": 6642.0, "top_payout_sek": 773.0}, "gated": {"bankroll": [0, -432.0, -432.0, -432.0, -728.0, -728.0, -728.0, -728.0, -728.0, -728.0, -728.0, -836.0, -836.0, -836.0, -836.0, -1268.0], "delta_95": [2141.975, 5380.0], "delta_sek": 3872.0, "net_95": [-2564.0, -216.0], "net_sek": -1268.0, "payout_sek": 136.0, "played": 4, "positive_rounds": 0, "roi": -0.9031339031339032, "roi_95": [-1.0, -0.6851851851851852], "stake_sek": 1404.0, "top_payout_sek": 136.0}, "payout": {"bankroll": [0, -432.0, -852.0, -1221.0, -1517.0, -1751.0, -2183.0, -2615.0, -2771.0, -3044.0, -3476.0, -3908.0, -4260.0, -4632.0, -5064.0, -5496.0], "delta_95": [-1752.0, 756.0], "delta_sek": -356.0, "net_95": [-6099.025, -4807.0], "net_sek": -5496.0, "payout_sek": 1146.0, "played": 15, "positive_rounds": 0, "roi": -0.8274616079494128, "roi_95": [-0.928374655647383, -0.7165010538994279], "stake_sek": 6642.0, "top_payout_sek": 276.0}}}, {"fallback_rounds": 0, "label": "Mean of 3 LiteLLM forecasts", "name": "mean", "policies": {"coverage": {"bankroll": [0, -432.0, -852.0, -1221.0, -1517.0, -1877.0, -2237.0, -2669.0, -2825.0, -2538.0, -2970.0, -3402.0, -3754.0, -4126.0, -4612.0, -5044.0], "delta_95": [0.0, 0.0], "delta_sek": 0.0, "net_95": [-6134.0, -3480.975000000002], "net_sek": -5044.0, "payout_sek": 1652.0, "played": 15, "positive_rounds": 1, "roi": -0.7532855436081243, "roi_95": [-0.9192065363221498, -0.513225379757638], "stake_sek": 6696.0, "top_payout_sek": 773.0}, "gated": {"bankroll": [0, -432.0, -432.0, -432.0, -728.0, -728.0, -728.0, -728.0, -728.0, -728.0, -728.0, -836.0, -836.0, -836.0, -836.0, -1028.0], "delta_95": [2327.0, 5449.0], "delta_sek": 4016.0, "net_95": [-2108.0, -192.0], "net_sek": -1028.0, "payout_sek": 136.0, "played": 4, "positive_rounds": 0, "roi": -0.8831615120274914, "roi_95": [-1.0, -0.6851851851851852], "stake_sek": 1164.0, "top_payout_sek": 136.0}, "payout": {"bankroll": [0, -432.0, -918.0, -1287.0, -1583.0, -1943.0, -2375.0, -2807.0, -2963.0, -3449.0, -3881.0, -4313.0, -4665.0, -5037.0, -5523.0, -5955.0], "delta_95": [-2523.0, 0.0], "delta_sek": -911.0, "net_95": [-6533.025, -5264.0], "net_sek": -5955.0, "payout_sek": 741.0, "played": 15, "positive_rounds": 0, "roi": -0.889336917562724, "roi_95": [-0.9674092140921409, -0.7924750146972369], "stake_sek": 6696.0, "top_payout_sek": 276.0}}}]</script>
+<script>
+'use strict';
+const items=JSON.parse(document.getElementById('data').textContent);
+const $=id=>document.getElementById(id);
+if(location.pathname.includes('/atg-sam/'))$('web-nav').hidden=false;
+const series=[['coverage','Coverage','#a8bffd'],['payout','Payout-aware','#6ff7ba'],['gated','Selective','#f5c479']];
+const money=new Intl.NumberFormat('en',{maximumFractionDigits:0,signDisplay:'exceptZero'});
+let active=0;
+function useCanvas(id,draw){
+ const cn=$(id), w=cn.clientWidth, h=cn.clientHeight, ratio=devicePixelRatio||1;
+ cn.width=w*ratio;cn.height=h*ratio;
+ const c=cn.getContext('2d');c.scale(ratio,ratio);c.font='11px system-ui';draw(c,w,h);
+}
+function line(c,x,y,x2,y2,color,width=1){c.beginPath();c.strokeStyle=color;c.lineWidth=width;c.moveTo(x,y);c.lineTo(x2,y2);c.stroke();}
+function curve(){
+ useCanvas('curve',(c,w,h)=>{
+  const row=items[active].policies;
+  const shown=series.filter(([key])=>row[key].played);
+  const values=[0,...shown.flatMap(([key])=>row[key].bankroll)], low=Math.min(-200,...values),high=Math.max(200,...values);
+  const left=65,right=w-17,top=15,bottom=h-27,total=row.coverage.bankroll.length-1;
+  const x=i=>left+i/total*(right-left), y=v=>bottom-(v-low)/(high-low)*(bottom-top);
+  c.fillStyle='#a1b8ab';c.textAlign='right';
+  for(let j=0;j<=4;j++){const v=low+j*(high-low)/4;line(c,left,y(v),right,y(v),'#31453a');c.fillText(money.format(v),left-7,y(v)+4);}
+  line(c,left,y(0),right,y(0),'#627c6c');
+  c.textAlign='center';
+  for(let i=0;i<=total;i++)if(i%3===0||i===total)c.fillText(i?i:'Start',x(i),h-7);
+  for(const [key,,color] of shown){
+   c.strokeStyle=color;c.lineWidth=key==='payout'?2.8:2;c.beginPath();
+   row[key].bankroll.forEach((v,i)=>i?c.lineTo(x(i),y(v)):c.moveTo(x(i),y(v)));c.stroke();
+   c.fillStyle=color;c.beginPath();c.arc(x(total),y(row[key].bankroll.at(-1)),3,0,Math.PI*2);c.fill();
+  }
+  $('legend').replaceChildren(...series.map(([key,name])=>{
+   const text=document.createElement('b');text.className=key;
+   text.textContent=row[key].played?'━ '+name:name+' · no plays';
+   return text;
+  }));
+ });
+}
+function effect(){
+ useCanvas('effect',(c,w,h)=>{
+  const edges=items.flatMap(r=>r.policies.payout.delta_95);
+  const min=Math.min(-1,...edges),max=Math.max(1,...edges);
+  const left=Math.min(160,w*.41),right=w-32,top=10,bottom=h-30,x=v=>left+(v-min)/(max-min)*(right-left);
+  line(c,x(0),top,x(0),bottom,'#77907e');
+  items.forEach((r,i)=>{
+   const y=top+(i+.5)*(bottom-top)/items.length;
+   const {delta_sek:v,delta_95:[a,b]}=r.policies.payout;
+   c.fillStyle='#b3c8bc';c.textAlign='right';c.fillText(r.label,left-8,y+4,left-10);
+   line(c,x(a),y,x(b),y,'#779683',2);line(c,x(a),y-4,x(a),y+4,'#779683');line(c,x(b),y-4,x(b),y+4,'#779683');
+   c.fillStyle=v<0?'#f1ad9d':'#6ff7ba';c.beginPath();c.arc(x(v),y,4,0,Math.PI*2);c.fill();
+  });
+  c.fillStyle='#a1b8ab';c.textAlign='center';
+  for(const v of [min,0,max])if(v===0||Math.abs(x(v)-x(0))>29)c.fillText(money.format(v),x(v),h-8);
+ });
+}
+items.forEach((r,i)=>{
+ const button=document.createElement('button');
+ button.type='button';button.textContent=r.label;button.setAttribute('aria-pressed',String(i===active));
+ button.onclick=()=>{active=i;Array.from($('selectors').children).forEach((b,j)=>b.setAttribute('aria-pressed',String(j===i)));curve();};
+ $('selectors').append(button);
+});
+new ResizeObserver(curve).observe($('curve'));new ResizeObserver(effect).observe($('effect'));
+</script>
+</body>
+</html>
