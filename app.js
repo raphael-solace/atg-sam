@@ -39,13 +39,12 @@ const series = [
   ['o4', 'O4 · Astra council', '#ffc269', []],
   ['astra_market', 'Astra · market only', '#fff0d1', [3, 6]],
 ];
-const selected = new Set(series.map(line => line[0]));
 const sek = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 0, signDisplay: 'exceptZero'});
 const pct = new Intl.NumberFormat('en-GB', {style: 'percent', maximumFractionDigits: 1, minimumFractionDigits: 1, signDisplay: 'exceptZero'});
 const fmtTime = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 let replay = [], settlements = [], playing = false, elapsed = 0, cursor = 0, lastFrame = null;
-let roundKey, roundNo, legNo, cards, winners, board, panel, headToHead, phase, imported = false;
-let scoreView = 'all', hasMatch = false;
+let roundKey, roundNo, legNo, cards, winners, board, headToHead, phase, imported = false;
+let hasMatch = false;
 
 function element(tag, content, className) {
   const node = document.createElement(tag);
@@ -66,7 +65,6 @@ function clear() {
   roundKey = null;
   roundNo = 1;
   board = [];
-  panel = null;
   headToHead = null;
   clearRound();
   phase = 'Ready to replay';
@@ -88,8 +86,6 @@ function install(events, personal) {
   replay = ordered;
   settlements = rounds;
   hasMatch = Boolean(rounds.at(-1).payload.head_to_head?.matched_rounds);
-  scoreView = hasMatch && new URLSearchParams(location.search).get('view') !== 'all' ? 'matched' : 'all';
-  $('score-view').hidden = !hasMatch;
   $('source').textContent = personal ? 'Local event log' : 'Recorded replay';
   $('basis').textContent = personal ? 'Local event log · Read in this browser only' : 'Archived backtest · Anonymized runners · No bets placed';
   $('play').disabled = $('restart').disabled = false;
@@ -129,9 +125,8 @@ function receive(evt) {
               .map(r => r.name === 'o3' ? {...r, label:'Orchestrator3'} : r);
     headToHead = p.head_to_head;
     roundNo = p.after_round;
-    panel = p.council;
     phase = 'Round settled';
-    pushEvent(evt, 'settled', `Week ${roundNo} · Full standings: ${board[0]?.label || 'Updated'}`);
+    pushEvent(evt, 'settled', `Week ${roundNo} · Standings updated`);
     return;
   }
   if (roundKey !== key) {
@@ -181,7 +176,7 @@ function countSettled() {
 }
 
 function scoredView(settled) {
-  if (scoreView === 'all') return {entries: board || [], excluded: new Set()};
+  if (!hasMatch) return {entries: board || [], excluded: new Set()};
   const history = settlements.slice(0, settled).map(event => event.payload.head_to_head);
   const excluded = new Set();
   history.forEach((pair, i) => {
@@ -201,23 +196,19 @@ function paint() {
   if (!replay.length) return;
   const settled = countSettled();
   const done = cursor === replay.length;
-  const matched = scoreView === 'matched';
-  const lead = scoredView(settled).entries[0];
-  $('view-matched').setAttribute('aria-pressed', String(matched));
-  $('view-all').setAttribute('aria-pressed', String(!matched));
-  $('score-scope').hidden = !matched;
-  $('score-scope').textContent = `${headToHead?.matched_rounds || 0} of ${settlements.length} rounds count. Both tickets must be valid. Dashed segments mark excluded rounds.`;
-  $('chart').setAttribute('aria-label', matched ? 'Net return on weeks where both tickets were valid' : 'Net return by settled week, including invalid tickets');
-  for (const chip of $('legend').children) chip.hidden = matched && !['o3','gpt6_luna'].includes(chip.dataset.entry);
+  const {entries} = scoredView(settled);
+  const lead = entries[0];
+  $('score-scope').hidden = !hasMatch;
+  $('score-scope').textContent = `Rounds where both tickets were valid · ${headToHead?.matched_rounds || 0} of ${settlements.length}`;
+  $('chart').setAttribute('aria-label', hasMatch ? 'Net return on weeks where both tickets were valid' : 'Net return by settled week, including invalid tickets');
+  for (const chip of $('legend').children) chip.hidden = hasMatch && !['o3','gpt6_luna'].includes(chip.dataset.entry);
   $('play').textContent = playing ? 'Pause' : done ? 'Replay' : cursor ? 'Resume' : 'Play replay';
   paintClock();
   $('event-count').textContent = `${cursor} / ${replay.length} events`;
   $('round').textContent = 'Round ' + String(roundNo).padStart(2, '0');
   $('phase').textContent = done ? 'Replay complete' : phase;
   $('settled').textContent = `${settled} OF ${settlements.length} SETTLED`;
-  $('lead-caption').textContent = done
-    ? (matched ? 'WINNER BY ROI · VALID TICKETS' : `WINNER BY ROI · ALL ${settlements.length} ROUNDS`)
-    : 'LEADER AFTER SETTLEMENT';
+  $('lead-caption').textContent = done ? 'WINNER BY ROI' : 'LEADER AFTER SETTLEMENT';
   $('leader').textContent = lead?.label || 'Awaiting results';
   $('leader-roi').textContent = lead ? pct.format(lead.roi) : '—';
   $('leader-net').textContent = lead ? `${sek.format(lead.net_sek)} SEK` : '';
@@ -233,7 +224,7 @@ function paint() {
     element('span', `Leg ${legNo}`),
     ...card.map(r => element('span', r.text || r, `runner${winners[legNo]?.includes(r.id || r) ? ' hit' : ''}`))
   ] : [element('span', 'Runner options appear with the race card.')]));
-  const rows = board.map(r => {
+  const rows = entries.map(r => {
     const row = element('tr', null, r.group === 'Orchestrator' ? 'orch' : '');
     row.append(element('td', r.label), element('td', sek.format(r.net_sek), r.net_sek > 0 ? 'gain' : 'loss'),
                element('td', pct.format(r.roi), r.roi > 0 ? 'gain' : 'loss'));
@@ -245,32 +236,7 @@ function paint() {
     cell.colSpan = 3;
     const row = element('tr'); row.append(cell); $('scores').replaceChildren(row);
   }
-  paintHeadToHead(settled);
-  $('council').hidden = !panel;
-  if (panel) {
-    const astra = board.find(r => r.name === 'o4');
-    $('council-summary').textContent = astra ? `Astra council · ${pct.format(astra.roi)} ROI` : 'Latest Astra council panel';
-    const names = panel.experts.map(r => r.label).join(' · ');
-    const marketWeight = panel.weights && Object.values(panel.weights).reduce((s,r) => s + (r.crowd || 0) + (r.win_odds || 0), 0) / 8;
-    $('experts').replaceChildren(element('p', names), element('p', marketWeight == null ? '' :
-      `${pct.format(marketWeight).replace('+','')} average market weight for this round`));
-  }
   plot();
-}
-
-function paintHeadToHead(settled) {
-  const report = $('head-to-head');
-  report.hidden = !headToHead?.matched_rounds;
-  if (report.hidden) return;
-  const count = headToHead.matched_rounds;
-  $('match-count').textContent = `${count} of ${settled} settled rounds · Both tickets valid`;
-  $('match-entries').replaceChildren(...headToHead.entries.map(item => {
-    const row = element('div', null, 'match-row');
-    row.append(element('span', item.label),
-               element('strong', `${sek.format(item.net_sek)} SEK`, item.net_sek > 0 ? 'gain' : 'loss'),
-               element('span', pct.format(item.roi), 'match-roi'));
-    return row;
-  }));
 }
 
 function plot() {
@@ -280,7 +246,7 @@ function plot() {
   const c = cn.getContext('2d'); c.scale(px,px);
   const {entries, excluded} = scoredView(countSettled());
   const tracks = series.map(line => [line, entries.find(r => r.name === line[0])?.bankroll])
-                       .filter(([[id],points]) => points && selected.has(id));
+                       .filter(([,points]) => points);
   const points = tracks.flatMap(([,p]) => p);
   const min = Math.floor(Math.min(-1000,...points)/1000)*1000, max = Math.ceil(Math.max(1000,...points)/1000)*1000;
   const total = settlements.length || 10, start = 61, end = w - 18, base = h - 31, top = 16;
@@ -318,26 +284,14 @@ for (let i=1; i<=8; i++) {
   $('legs').append(btn);
 }
 for (const [key,label,color,dash] of series) {
-  const btn=element('button',null);
-  btn.setAttribute('aria-pressed','true');
-  btn.dataset.entry=key;
-  const swatch=element('i',null,'swatch');swatch.style.color=color;swatch.style.borderTopStyle=dash.length?'dashed':'solid';
-  btn.append(swatch,label);btn.onclick=()=>{
-    selected.has(key)?selected.delete(key):selected.add(key);btn.setAttribute('aria-pressed',String(selected.has(key)));plot();
-  };$('legend').append(btn);
+  const item=element('span',null,'series-label');
+  item.dataset.entry=key;
+  const swatch=element('i',null,'swatch');
+  swatch.style.color=color;
+  swatch.style.borderTopStyle=dash.length?'dashed':'solid';
+  item.append(swatch,label);
+  $('legend').append(item);
 }
-function setScoreView(view) {
-  if (!hasMatch) return;
-  scoreView = view;
-  const url = new URL(location.href);
-  if (view === 'all') url.searchParams.set('view', 'all');
-  else url.searchParams.delete('view');
-  history.replaceState(null, '', url);
-  paint();
-}
-
-$('view-matched').onclick=()=>setScoreView('matched');
-$('view-all').onclick=()=>setScoreView('all');
 
 function frame(now) {
   if (!playing) { lastFrame=null; return; }
