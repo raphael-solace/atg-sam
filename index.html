@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Replay recorded V85 model decisions and outcomes, one Solace topic at a time.">
+<title>V85 Relay · Solace replay</title>
+<link rel="stylesheet" href="style.css">
+<script defer src="app.js"></script>
+</head>
+<body>
+<header class="page mast"><div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> V85 Relay <span class="split">/</span> <small>SOLACE PUBSUB+</small></div><span class="source"><i></i><span id="source">Recorded MQTT stream</span></span></header>
+<main class="page">
+  <div class="hero">
+    <div><h1>Who wins the V85?</h1><p>Watch model tickets and official settlements unfold over ten recorded rounds.</p></div>
+    <button type="button" class="file" id="open-file">Open event log <span aria-hidden="true">↗</span></button>
+    <input type="file" id="file" accept=".json,.jsonl,application/json,text/plain" hidden>
+  </div>
+  <section class="controls" aria-label="Playback">
+    <button id="play" class="play" disabled>Play replay</button><button id="restart" class="quiet" title="Restart replay" disabled>Reset</button>
+    <label class="speed">Speed <select id="speed" aria-label="Replay speed"><option value="1">1×</option><option value="5" selected>5×</option><option value="20">20×</option></select></label>
+    <div id="weeks" class="weeks" aria-label="Jump to a settled week"></div>
+    <span id="time" class="clock">0:00 / 4:59</span>
+  </section>
+  <div id="notice" class="notice" role="status"></div>
+  <div class="grid">
+    <section class="panel stream">
+      <div class="panel-head"><div><div class="eyebrow">atg/derby/#</div><h2>Event stream</h2></div><span class="pill" id="event-count">0 events</span></div>
+      <div class="racebar"><div><strong id="round">Round 01</strong><span id="phase">Ready to replay</span></div><div id="legs" class="legs" aria-label="Race options"></div></div>
+      <div class="options" id="options">The runner options appear when the first race card arrives.</div>
+      <div class="feed" id="feed" aria-label="Most recent events"><div class="placeholder">Press Play to receive the first race card.</div></div>
+    </section>
+    <section class="panel performance" id="performance">
+      <div class="panel-head"><div><div class="eyebrow" id="settled">0 OF 10 SETTLED</div><h2>Cumulative return</h2></div><span class="pill verified">NET SEK</span></div>
+      <div class="leader"><div><span id="lead-caption">LEADER AFTER SETTLEMENT</span><strong id="leader">Awaiting results</strong></div><div class="lead-value"><strong id="leader-roi">—</strong><span id="leader-net"></span></div></div>
+      <canvas id="chart" aria-label="Net return by settled week" role="img"></canvas>
+      <div class="legend" id="legend" aria-label="Toggle chart series"></div>
+      <div class="table-wrap"><table><thead><tr><th>Forecaster</th><th>Net SEK</th><th>ROI</th></tr></thead><tbody id="scores"><tr><td colspan="3">Standings arrive with each settlement.</td></tr></tbody></table></div>
+      <details class="council" id="council" hidden><summary>Latest Astra council panel</summary><div id="experts"></div></details>
+    </section>
+  </div>
+  <footer><span id="basis">Archived backtest · Anonymized runners · No bets placed</span><span>Ten rounds · Returns are indicative</span></footer>
+</main>
+</body>
+</html>
