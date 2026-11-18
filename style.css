@@ -21,6 +21,10 @@ button:disabled { cursor: default; opacity: .55; }
 .brand span { border-left: 1px solid #536d95; padding-left: 14px; font-weight: 600; }
 .brand span, #source { font-size: .78rem; }
 #source { color: #d0e0f6; }
+.mast-right, .mast-nav { display: flex; align-items: center; gap: 9px; }
+.mast-nav a { color: #e1edff; text-decoration: none; padding: 4px 8px; border-radius: 4px; font-size: .82rem; font-weight: 650; }
+.mast-nav a[aria-current] { background: var(--yellow); color: var(--navy); }
+.mast-nav a:focus-visible { outline-color: var(--yellow); }
 
 .hero { padding: 25px 0 18px; }
 h1, h2, p { margin: 0; }
@@ -152,6 +156,7 @@ footer { display: flex; justify-content: space-between; align-items: start; flex
 }
 
 @media (max-width: 470px) {
+  .brand span { display: none; }
   .hero p { font-size: .88rem; }
   .panel-head, .racebar, .event { padding-inline: 12px; }
   .leader { margin-inline: 12px; }

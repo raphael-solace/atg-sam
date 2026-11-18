@@ -2,6 +2,8 @@
 
 A static GitHub Pages viewer for a recorded 10-round V85 backtest. Its topic stream contains archived model picks and their historical settlement. Playback makes no model calls, publishes no messages and places no bets. The separate local demo sends the original replay through Solace PubSub+ over MQTT.
 
+**Vinnare** is a separate five-minute replay of ten single-race picks settled against the official ATG win pool. It includes the ten configured LiteLLM routes, two panels, and the market favourite. The viewer features Orchestrator3 and the leading solo model, including tied scores.
+
 Run `python3 -m http.server 8000` from this folder to preview it. The site has no build step or runtime service.
 
 The bundled replay uses anonymized options and displays real historical decisions and performance. The public export omits horse and driver names, dates, tracks, original program numbers, market snapshots, and official payout amounts. **Replay details** contains links to the studies and **Open event log**, which reads internal JSONL files in the browser without uploading or storing them.
