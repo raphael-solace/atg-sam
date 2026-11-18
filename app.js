@@ -45,6 +45,12 @@ const ticketLegs = Array.from({length: 8}, (_, i) => i + 1);
 const pct = new Intl.NumberFormat('en-GB', {style: 'percent', maximumFractionDigits: 1, minimumFractionDigits: 1, signDisplay: 'exceptZero'});
 const fmtTime = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 const excludedParticipants = new Set(['harry_boy', 'crowd', 'win_odds']);
+const strategyNotes = {
+  o1: 'Averaged the available model forecasts and used the common ticket builder.',
+  o2: 'Blended model and market forecasts. Once enough earlier rounds settled, those results informed the blend.',
+  decision1: 'Decision-1 supplied win probabilities. The common builder used them to allocate coverage across the eight legs.',
+  favourites: 'Singled the four strongest public favourites and spread the remaining budget across the other legs.',
+};
 const chart = $('chart');
 const inspector = $('chart-inspector');
 let chartView, inspection = null;
@@ -68,6 +74,7 @@ function clearRound() {
   programNumbers = {};
   rowPrice = null;
   settlement = null;
+  $('agent-feed').replaceChildren();
   phase = 'Race cards arriving';
 }
 
@@ -184,7 +191,12 @@ function receive(evt) {
   } else if (kind === 'bet') {
     phase = 'Tickets locked';
     const name = /^(o3|orchestrator3)(-builder)?$/.test(n) ? 'Orchestrator3' : p.forecaster;
-    if (!n.endsWith('-builder')) tickets.set(n === 'orchestrator3' ? 'o3' : n, p);
+    if (!n.endsWith('-builder')) {
+      const id = n === 'orchestrator3' ? 'o3' : n;
+      const entry = {...p, name, at: evt.at};
+      tickets.set(id, entry);
+      if (participants.some(participant => participant.name === id)) appendAgentNote(id, entry);
+    }
     pushEvent(evt, 'bet', p.invalid ? `${name} · Invalid` :
       `${name}${n.endsWith('-builder') ? ' · Builder' : ''} · ${p.cost_sek} SEK`, p.ticket);
   } else if (kind === 'result') {
@@ -217,6 +229,65 @@ function paintClock() {
 
 function programNumber(leg, runner) {
   return programNumbers[leg]?.[runner] ?? runner;
+}
+
+function agentNote(id, entry) {
+  if (entry.invalid) return {text: 'No valid ticket cleared validation for this round.', recorded: false};
+  if (typeof entry.against_the_crowd === 'string' && entry.against_the_crowd.trim()) {
+    return {text: entry.against_the_crowd.trim(), recorded: true};
+  }
+  return {text: strategyNotes[id] || 'The model submitted its picks and stake.', recorded: false};
+}
+
+function selectTicket(id) {
+  $('ticket-model').value = id;
+  paintTicket();
+  paintAgentNotes();
+}
+
+function appendAgentNote(id, entry) {
+  const row = element('li');
+  const button = element('button', null, 'agent-event');
+  button.type = 'button';
+  button.dataset.forecaster = id;
+  button.setAttribute('aria-controls', 'agent-selected ticket-inspector');
+  const heading = element('span', null, 'agent-event-heading');
+  heading.append(element('time', fmtTime(entry.at)), element('strong', entry.name));
+  button.append(heading, element('span', agentNote(id, entry).text, 'agent-event-excerpt'));
+  button.onclick = () => selectTicket(id);
+  row.append(button);
+  $('agent-feed').prepend(row);
+}
+
+function paintAgentNotes() {
+  const select = $('ticket-model');
+  const id = select.value;
+  const entry = tickets.get(id);
+  const count = $('agent-feed').children.length;
+  $('agent-note-count').textContent = count ? `${count} ${count === 1 ? 'ticket' : 'tickets'}` : '';
+  $('agent-name').textContent = entry?.name ?? select.selectedOptions[0]?.textContent ?? '';
+  for (const button of $('agent-feed').querySelectorAll('button')) {
+    button.setAttribute('aria-pressed', String(button.dataset.forecaster === id));
+  }
+  $('agent-confidence').hidden = !entry?.confidence;
+  $('agent-note-meta').hidden = !entry;
+  $('agent-plan').hidden = true;
+  if (!entry) {
+    $('agent-explanation').textContent = 'Decision notes appear when each ticket arrives.';
+    return;
+  }
+  const note = agentNote(id, entry);
+  $('agent-explanation').textContent = note.recorded ? `“${note.text}”` : note.text;
+  $('agent-note-meta').textContent = `${note.recorded ? 'Recorded explanation' : 'Replay summary'} · ${fmtTime(entry.at)}`;
+  $('agent-confidence').textContent = entry.confidence ? `${entry.confidence} confidence` : '';
+  if (entry.invalid || !entry.ticket) return;
+  const singles = ticketLegs.filter(leg => entry.ticket[leg]?.length === 1)
+    .map(leg => `L${leg} #${programNumber(leg, entry.ticket[leg][0])}`);
+  const details = [singles.length ? `Spik · ${singles.join(', ')}` : 'No single picks'];
+  if (Number.isFinite(entry.rows)) details.push(`${amount.format(entry.rows)} rows`);
+  if (Number.isFinite(entry.cost_sek)) details.push(`${amount.format(entry.cost_sek)} SEK stake`);
+  $('agent-plan').textContent = details.join(' · ');
+  $('agent-plan').hidden = false;
 }
 
 function countsByCorrectLegs(ticket, winnersByLeg) {
@@ -395,6 +466,7 @@ function paint() {
   });
   $('scores').replaceChildren(...rows);
   paintTicket();
+  paintAgentNotes();
   plot();
 }
 
@@ -591,8 +663,8 @@ document.addEventListener('click', event => {
   if (event.target !== chart && !inspector.contains(event.target)) selectChartWeek(null);
 });
 new ResizeObserver(plot).observe(chart);
-$('ticket-model').onchange = paintTicket;
-fetch('replay.json?v=4').then(response=>{
+$('ticket-model').onchange = event => selectTicket(event.target.value);
+fetch('replay.json?v=5').then(response=>{
   if (!response.ok) throw Error('The recorded replay could not load.');
   return response.json();
 }).then(data=>{ if(!imported) install(data.events,false); }).catch(e=>{ $('notice').textContent=e.message; });

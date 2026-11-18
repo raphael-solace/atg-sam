@@ -128,7 +128,8 @@ h2 { font-size: 1.18rem; line-height: 1.2; letter-spacing: -.025em; color: var(-
 .chart-inspector .near-line { border-radius: 4px; background: #fff3b9; color: var(--navy); font-weight: 700; }
 .chart-inspector .chart-return { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
-.ticket-inspector, .participants { margin-top: 12px; }
+.ticket-zone { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 12px; align-items: start; margin-top: 12px; }
+.participants { margin-top: 12px; }
 .ticket-head { align-items: center; flex-wrap: wrap; }
 .ticket-head span, .ticket-model, .ticket-note, .ticket-leg-result { color: var(--muted); font-size: .78rem; }
 .ticket-model { display: flex; align-items: center; gap: 7px; }
@@ -150,6 +151,22 @@ h2 { font-size: 1.18rem; line-height: 1.2; letter-spacing: -.025em; color: var(-
 #ticket-tier-rows .paid-tier { background: #fff9df; }
 .tier-note { display: block; color: var(--muted); }
 .ticket-net { margin-top: 6px; text-align: right; font-size: .82rem; font-weight: 650; }
+.agent-notes .panel-head span { color: var(--muted); font-size: .75rem; }
+.agent-selected { margin: 0 16px 10px; padding: 9px 11px; border-left: 4px solid var(--yellow); border-radius: 6px; background: var(--tint); }
+.agent-note-heading, .agent-event-heading { display: flex; gap: 5px 8px; align-items: baseline; flex-wrap: wrap; }
+.agent-note-heading h3 { margin: 0; color: var(--navy); font-size: .89rem; }
+#agent-confidence { border-radius: 4px; padding: 1px 5px; background: #e3effd; color: var(--navy); font-size: .68rem; text-transform: capitalize; }
+.agent-note-meta, #agent-plan { color: var(--muted); font-size: .72rem; }
+.agent-note-meta { margin-top: 2px; }
+#agent-explanation { margin-top: 5px; font-size: .81rem; line-height: 1.55; overflow-wrap: anywhere; }
+#agent-plan { margin-top: 7px; }
+.agent-feed { max-height: 315px; overflow: auto; overscroll-behavior: contain; margin: 0; padding: 0; list-style: none; }
+.agent-event { display: block; width: 100%; padding: 7px 16px; border: 0; border-top: 1px solid var(--line); background: var(--panel); color: var(--text); text-align: left; }
+.agent-event:hover, .agent-event[aria-pressed="true"] { background: #fff9df; }
+.agent-event:focus-visible { outline-offset: -3px; }
+.agent-event-heading time { color: var(--muted); font: .68rem var(--mono); }
+.agent-event-heading strong { color: var(--navy); font-size: .76rem; }
+.agent-event-excerpt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin-top: 2px; color: var(--muted); font-size: .72rem; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 td, th { padding: 7px 10px; border-top: 1px solid var(--line); text-align: right; font-size: .78rem; white-space: nowrap; }
 th { background: var(--tint); color: var(--muted); font-size: .74rem; }
@@ -167,14 +184,17 @@ footer { display: flex; justify-content: space-between; align-items: start; flex
 .extras button { border: 0; padding: 0; background: none; text-decoration: underline; }
 .extras p { margin-top: 4px; }
 
+@media (max-width: 1100px) {
+  .ticket-legs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
 @media (max-width: 860px) {
   .page { width: calc(100% - 28px); }
   .controls { flex-wrap: wrap; gap: 8px 12px; }
   .week-picker { order: 1; flex-basis: 100%; }
-  .grid { grid-template-columns: 1fr; }
+  .grid, .ticket-zone { grid-template-columns: 1fr; }
   .feed { height: 225px; }
   .feed:has(> .placeholder) { height: 110px; }
-  .ticket-legs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 @media (max-width: 470px) {
@@ -186,6 +206,8 @@ footer { display: flex; justify-content: space-between; align-items: start; flex
   .chart-inspector { margin-inline: 12px; }
   .chart-inspector ul { grid-template-columns: 1fr; }
   .ticket-body { padding-inline: 12px; }
+  .agent-selected { margin-inline: 12px; }
+  .agent-event { padding-inline: 12px; }
   .ticket-legs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ticket-model select { max-width: 190px; }
   table { table-layout: fixed; }

@@ -21,4 +21,6 @@ Enable **Show topics** to display the demo's proposed ATG-style topic addresses.
 
 The chart and standings count all ten rounds, including the original penalties for invalid tickets. The participant list below the replay is available before playback, and scores appear as weeks settle. **Orchestrator3**, the Claude Opus 5.5 panel, appears first with its recorded ROI rank. The viewer omits the Harry Boy-style sampler and the two public-market forecasts.
 
+**Agent notes** follow the ticket events. Choose a note to load that participant’s ticket. Recorded explanations use program numbers in place of runner names. For entries without a recorded explanation, the panel labels the ticket or strategy summary separately.
+
 Hover or tap on a line to highlight it and see every participant’s net return for that week. Use the arrow keys to change weeks when the chart is focused.
