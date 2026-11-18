@@ -2,20 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V85 Relay · Payout-aware ticket study</title>
+<title>ATG V85 · Payout-aware ticket study</title>
+<link rel="stylesheet" href="theme.css?v=4">
 <style>
-:root{color-scheme:dark;--bg:#101715;--panel:#19231f;--line:#2f4137;--text:#e7f3eb;--dim:#a1b8ab;--green:#6ff7ba;--blue:#a8bffd;--gold:#f5c479;--loss:#f1ad9d;--mono:"IBM Plex Mono",ui-monospace,monospace}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 "Geist",system-ui,sans-serif}.page{width:min(1260px,calc(100% - 48px));margin:auto}
-header.page{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px 0;border-bottom:1px solid var(--line)}header strong{letter-spacing:-.04em}a{color:var(--green)}nav{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem}
-h1{font-size:clamp(2.45rem,5.12vw,4.15rem);letter-spacing:-.061em;line-height:1.04;margin:8px 0 7px}h2{font-size:1.26rem;letter-spacing:-.04em;margin:0}p{margin:4px 0;color:var(--dim)}
-.hero{padding:25px 0 16px}.kicker,.small{font:600 .69rem var(--mono);letter-spacing:.09em;color:var(--green);text-transform:uppercase}
-.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.tag{border:1px solid var(--line);padding:5px 8px;border-radius:6px;font:500 .7rem var(--mono);color:#b3c8bc}
-.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.card,.panel{min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:11px;overflow:hidden}.card{padding:12px 15px}.card strong{display:block;font-size:1.35rem;line-height:1.2;margin:5px 0;letter-spacing:-.034em}.card p{font-size:.75rem}.card.feature{background:#23372c;border-color:#3a5746}
-.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;margin:11px 0}.panel header{padding:14px 16px 8px}.panel header p{font-size:.79rem}.pad{padding:6px 16px 12px}.selectors{display:flex;gap:4px;flex-wrap:wrap}.selectors button{padding:4px 7px;cursor:pointer;border:1px solid var(--line);border-radius:5px;background:#1c2c24;color:var(--dim);font:500 .73rem system-ui}.selectors button[aria-pressed=true]{color:#0a2f1d;background:var(--green);border-color:var(--green);font-weight:700}.selectors button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
-canvas{width:100%;height:238px;display:block}.legend{font-size:.72rem;display:flex;gap:11px;flex-wrap:wrap;color:var(--dim)}.coverage{color:var(--blue)}.payout{color:var(--green)}.gated{color:var(--gold)}
-.scroll{overflow:auto}.score{border-collapse:collapse;width:100%;white-space:nowrap;font-variant-numeric:tabular-nums}.score th,.score td{border-top:1px solid var(--line);padding:8px 11px;text-align:right;font-size:.79rem}.score th{color:var(--dim);background:#16221d;font-family:var(--mono);font-size:.66rem}.score th:last-child,.score td:last-child{padding-right:16px}.score :is(td,th):first-child{padding-left:16px;text-align:left}.score :is(td,th):nth-child(2){text-align:left}.score tr.marker td{border-top-color:#506556}.gain{color:var(--green)}.loss{color:var(--loss)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font)}.page{width:min(1260px,calc(100% - 48px));margin:auto}
+header.page{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px 0;border-bottom:1px solid var(--line)}header strong{letter-spacing:-.04em}a{color:var(--blue)}nav{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem}
+h1{font-size:clamp(2.45rem,5.12vw,4.15rem);letter-spacing:-.061em;line-height:1.04;margin:8px 0 7px}h2{font-size:1.26rem;letter-spacing:-.04em;margin:0}p{margin:4px 0;color:var(--muted)}
+.hero{padding:25px 0 16px}.kicker,.small{font:600 .69rem var(--mono);letter-spacing:.09em;color:var(--blue);text-transform:uppercase}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.tag{border:1px solid var(--line);padding:5px 8px;border-radius:6px;font:500 .7rem var(--mono);color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.card,.panel{min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:11px;overflow:hidden}.card{padding:12px 15px}.card strong{display:block;font-size:1.35rem;line-height:1.2;margin:5px 0;letter-spacing:-.034em}.card p{font-size:.75rem}.card.feature{background:#fff9df;border-color:#e6d381}
+.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;margin:11px 0}.panel header{padding:14px 16px 8px}.panel header p{font-size:.79rem}.pad{padding:6px 16px 12px}.selectors{display:flex;gap:4px;flex-wrap:wrap}.selectors button{padding:4px 7px;cursor:pointer;border:1px solid var(--line);border-radius:5px;background:var(--tint);color:var(--muted);font:500 .73rem system-ui}.selectors button[aria-pressed=true]{color:white;background:var(--blue);border-color:var(--blue);font-weight:700}.selectors button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+canvas{width:100%;height:238px;display:block}.legend{font-size:.72rem;display:flex;gap:11px;flex-wrap:wrap;color:var(--muted)}.coverage{color:var(--muted)}.payout{color:var(--blue)}.gated{color:var(--gold)}
+.scroll{overflow:auto}.score{border-collapse:collapse;width:100%;white-space:nowrap;font-variant-numeric:tabular-nums}.score th,.score td{border-top:1px solid var(--line);padding:8px 11px;text-align:right;font-size:.79rem}.score th{color:var(--muted);background:var(--tint);font-family:var(--mono);font-size:.66rem}.score th:last-child,.score td:last-child{padding-right:16px}.score :is(td,th):first-child{padding-left:16px;text-align:left}.score :is(td,th):nth-child(2){text-align:left}.score tr.marker td{border-top-color:var(--axis)}.gain{color:var(--gain)}.loss{color:var(--loss)}
 .notes{font-size:.79rem;margin:15px 0 30px}.notes p{margin:6px 0}.notes summary{cursor:pointer;color:var(--text)}
 @media(max-width:850px){.page{width:calc(100% - 26px)}.grid{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.card strong{font-size:1.16rem}.card{padding:8px 12px}}
+
+header.page{color:var(--navy);border-bottom:3px solid var(--yellow)}
 </style>
 </head>
 <body>
@@ -57,7 +59,7 @@ canvas{width:100%;height:238px;display:block}.legend{font-size:.72rem;display:fl
 
 
 
-<header class="page"><strong>V85 Relay / Ticket builders</strong><nav id="web-nav" hidden><a href="./">Recorded replay</a><a href="prompt-study.html">Prompt study</a></nav></header>
+<header class="page"><strong>ATG V85 / Ticket builders</strong><nav><a href="./">Recorded replay</a><a href="prompt-study.html">Prompt study</a></nav></header>
 <main class="page">
 <div class="hero">
 <div class="kicker">Official ATG · Matched backtest</div>
@@ -132,8 +134,9 @@ canvas{width:100%;height:238px;display:block}.legend{font-size:.72rem;display:fl
 'use strict';
 const items=JSON.parse(document.getElementById('data').textContent);
 const $=id=>document.getElementById(id);
-if(location.pathname.includes('/atg-sam/'))$('web-nav').hidden=false;
-const series=[['coverage','Coverage','#a8bffd'],['payout','Payout-aware','#6ff7ba'],['gated','Selective','#f5c479']];
+const theme = getComputedStyle(document.documentElement);
+const themeColor = name => theme.getPropertyValue('--' + name).trim();
+const series=[['coverage','Coverage',themeColor('axis')],['payout','Payout-aware',themeColor('blue')],['gated','Selective',themeColor('gold')]];
 const money=new Intl.NumberFormat('en',{maximumFractionDigits:0,signDisplay:'exceptZero'});
 let active=0;
 function useCanvas(id,draw){
@@ -149,9 +152,9 @@ function curve(){
   const values=[0,...shown.flatMap(([key])=>row[key].bankroll)], low=Math.min(-200,...values),high=Math.max(200,...values);
   const left=65,right=w-17,top=15,bottom=h-27,total=row.coverage.bankroll.length-1;
   const x=i=>left+i/total*(right-left), y=v=>bottom-(v-low)/(high-low)*(bottom-top);
-  c.fillStyle='#a1b8ab';c.textAlign='right';
-  for(let j=0;j<=4;j++){const v=low+j*(high-low)/4;line(c,left,y(v),right,y(v),'#31453a');c.fillText(money.format(v),left-7,y(v)+4);}
-  line(c,left,y(0),right,y(0),'#627c6c');
+  c.fillStyle=themeColor('muted');c.textAlign='right';
+  for(let j=0;j<=4;j++){const v=low+j*(high-low)/4;line(c,left,y(v),right,y(v),themeColor('line'));c.fillText(money.format(v),left-7,y(v)+4);}
+  line(c,left,y(0),right,y(0),themeColor('axis'));
   c.textAlign='center';
   for(let i=0;i<=total;i++)if(i%3===0||i===total)c.fillText(i?i:'Start',x(i),h-7);
   for(const [key,,color] of shown){
@@ -171,15 +174,15 @@ function effect(){
   const edges=items.flatMap(r=>r.policies.payout.delta_95);
   const min=Math.min(-1,...edges),max=Math.max(1,...edges);
   const left=Math.min(160,w*.41),right=w-32,top=10,bottom=h-30,x=v=>left+(v-min)/(max-min)*(right-left);
-  line(c,x(0),top,x(0),bottom,'#77907e');
+  line(c,x(0),top,x(0),bottom,themeColor('axis'));
   items.forEach((r,i)=>{
    const y=top+(i+.5)*(bottom-top)/items.length;
    const {delta_sek:v,delta_95:[a,b]}=r.policies.payout;
-   c.fillStyle='#b3c8bc';c.textAlign='right';c.fillText(r.label,left-8,y+4,left-10);
-   line(c,x(a),y,x(b),y,'#779683',2);line(c,x(a),y-4,x(a),y+4,'#779683');line(c,x(b),y-4,x(b),y+4,'#779683');
-   c.fillStyle=v<0?'#f1ad9d':'#6ff7ba';c.beginPath();c.arc(x(v),y,4,0,Math.PI*2);c.fill();
+   c.fillStyle=themeColor('muted');c.textAlign='right';c.fillText(r.label,left-8,y+4,left-10);
+   line(c,x(a),y,x(b),y,themeColor('axis'),2);line(c,x(a),y-4,x(a),y+4,themeColor('axis'));line(c,x(b),y-4,x(b),y+4,themeColor('axis'));
+   c.fillStyle=v<0?themeColor('loss'):themeColor('blue');c.beginPath();c.arc(x(v),y,4,0,Math.PI*2);c.fill();
   });
-  c.fillStyle='#a1b8ab';c.textAlign='center';
+  c.fillStyle=themeColor('muted');c.textAlign='center';
   for(const v of [min,0,max])if(v===0||Math.abs(x(v)-x(0))>29)c.fillText(money.format(v),x(v),h-8);
  });
 }

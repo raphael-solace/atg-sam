@@ -31,11 +31,13 @@ function parseTopic(topic) {
   }
   return null;
 }
+const theme = getComputedStyle(document.documentElement);
+const palette = Object.fromEntries(['blue', 'gold', 'axis', 'line', 'muted']
+  .map(name => [name, theme.getPropertyValue(`--${name}`).trim()]));
 const series = new Map([
-  ['o3', ['Orchestrator3', '#78bcf4']],
-  ['gpt6_luna', ['GPT-6 Luna', '#6ff7ba']],
+  ['o3', ['Orchestrator3', palette.blue]],
+  ['gpt6_luna', ['GPT-6 Luna', palette.gold]],
 ]);
-const mutedColor = '#819b8a';
 const sek = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 0, signDisplay: 'exceptZero'});
 const pct = new Intl.NumberFormat('en-GB', {style: 'percent', maximumFractionDigits: 1, minimumFractionDigits: 1, signDisplay: 'exceptZero'});
 const fmtTime = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
@@ -64,7 +66,7 @@ function clear() {
   settled = 0;
   clearRound();
   phase = 'Ready to replay';
-  $('feed').replaceChildren(element('div', 'Press Play to receive the first race card.', 'placeholder'));
+  $('feed').replaceChildren(element('div', 'Press Play to see the first race card.', 'placeholder'));
   paint();
 }
 
@@ -82,10 +84,10 @@ function install(events, personal) {
   replay = ordered;
   settlements = rounds;
   $('source').textContent = personal ? 'Local event log' : 'Recorded replay';
-  $('basis').textContent = personal ? 'Local event log · Read in this browser only' : 'Archived backtest · Anonymized runners · No bets placed';
+  $('basis').textContent = personal ? 'Local file · Read in this browser only' : 'Historical replay · No bets placed';
   $('play').disabled = $('restart').disabled = false;
   $('weeks').replaceChildren(...rounds.map((evt,i) => {
-    const btn = element('button', String(i+1).padStart(2,'0'));
+    const btn = element('button', i + 1);
     btn.setAttribute('aria-label', `Jump to settlement ${i+1}`);
     btn.onclick = () => { playing = false; clear(); seek(evt.at); };
     return btn;
@@ -97,7 +99,6 @@ function install(events, personal) {
 
 function pushEvent(evt, type, title, details = null) {
   const entry = element(details ? 'details' : 'div', null, `event ${type}`);
-  entry.title = evt.topic;
   const line = element(details ? 'summary' : 'div', null, 'item');
   line.append(element('time', fmtTime(evt.at), 'stamp'), element('span', type, 'tag'),
               element('span', title, 'event-text'), element('code', evt.topic, 'event-topic'));
@@ -180,32 +181,38 @@ function paint() {
   const featured = board.find(row => row.name === 'o3');
   const focus = featured || board.find(row => row.rank === 1);
   const entries = featured ? [featured, ...board.filter(row => row !== featured)] : board;
-  $('legend').querySelector('[data-entry="others"]').hidden = !board.some(row => row.bankroll.length && !series.has(row.name));
+  for (const item of $('legend').children) {
+    const entry = item.dataset.entry;
+    item.hidden = !board.some(row => row.bankroll.length && (entry === 'others' ? !series.has(row.name) : row.name === entry));
+  }
   $('play').textContent = playing ? 'Pause' : done ? 'Replay' : cursor ? 'Resume' : 'Play replay';
   paintClock();
   $('event-count').textContent = `${cursor} / ${replay.length} events`;
-  $('round').textContent = 'Round ' + String(roundNo).padStart(2, '0');
+  $('round').textContent = `Week ${roundNo}`;
   $('phase').textContent = done ? 'Replay complete' : phase;
-  $('settled').textContent = `${settled} OF ${settlements.length} SETTLED`;
+  $('settled').textContent = `${settled} of ${settlements.length} settled`;
   const hasReturn = focus?.rank != null;
-  $('lead-caption').textContent = featured ? 'FEATURED AGENT' : 'HIGHEST ROI';
+  $('lead-caption').textContent = featured || !focus ? 'Featured agent' : 'Highest ROI';
   $('leader').textContent = focus?.label || 'Awaiting results';
   $('leader-roi').textContent = hasReturn ? pct.format(focus.roi) : '—';
   $('leader-net').textContent = hasReturn ? `#${focus.rank} by ROI · ${sek.format(focus.net_sek)} SEK` : '';
   Array.from($('weeks').children).forEach((btn,i) => {
-    btn.classList.toggle('done', i < settled); btn.classList.toggle('active', i + 1 === roundNo);
+    btn.classList.toggle('done', i < settled);
+    btn.classList.toggle('active', i + 1 === roundNo);
+    btn.setAttribute('aria-current', String(i + 1 === roundNo));
   });
   Array.from($('legs').children).forEach((btn,i) => {
     btn.classList.toggle('done', Boolean(winners[i+1]));
     btn.setAttribute('aria-pressed', String(legNo === i + 1));
   });
   const card = cards[legNo];
+  $('options').hidden = !card;
   $('options').replaceChildren(...(card ? [
     element('span', `Leg ${legNo}`),
     ...card.map(r => element('span', r.text || r, `runner${winners[legNo]?.includes(r.id || r) ? ' hit' : ''}`))
-  ] : [element('span', 'Runner options appear with the race card.')]));
+  ] : []));
   const rows = entries.map(r => {
-    const row = element('tr', null, r.name === 'o3' ? 'featured' : r.group === 'Orchestrator' ? 'orch' : '');
+    const row = element('tr', null, r.name === 'o3' ? 'featured' : '');
     const staked = r.rank != null;
     row.append(
       element('td', r.label),
@@ -218,7 +225,7 @@ function paint() {
   });
   if (rows.length) $('scores').replaceChildren(...rows);
   else {
-    const cell = element('td', 'Standings arrive with each settlement.');
+    const cell = element('td', 'Standings appear after the first week.');
     cell.colSpan = 5;
     const row = element('tr'); row.append(cell); $('scores').replaceChildren(row);
   }
@@ -239,22 +246,23 @@ function plot() {
   const x = i => start + i / total * (end - start), y = v => base - (v-min)/(max-min)*(base-top);
   c.font = '11px system-ui'; c.textAlign = 'right';
   for (let v=min; v<=max; v+=1000) {
-    c.strokeStyle = v === 0 ? '#607a69' : '#2b3d34'; c.beginPath(); c.moveTo(start,y(v));c.lineTo(end,y(v));c.stroke();
-    c.fillStyle = '#99b1a3'; c.fillText(sek.format(v),start-8,y(v)+4);
+    c.strokeStyle = v === 0 ? palette.axis : palette.line;
+    c.beginPath(); c.moveTo(start,y(v));c.lineTo(end,y(v));c.stroke();
+    c.fillStyle = palette.muted; c.fillText(sek.format(v),start-8,y(v)+4);
   }
   c.textAlign = 'center';
   for (let i=0; i<=total; i++) {
     if (w>510 || i%2===0 || i===total) {
-      c.fillStyle = '#99b1a3';
+      c.fillStyle = palette.muted;
       c.fillText(i===0 ? 'Start' : i,x(i),h-10);
     }
   }
-  if (!points.length) c.fillText('The curves start at the first settlement.',(start+end)/2,(top+base)/2-13);
+  if (!points.length) c.fillText('Returns appear as weeks settle.',(start+end)/2,(top+base)/2-13);
   for (const {name, bankroll: bank} of tracks) {
     const primary = series.get(name);
-    const color = primary?.[1] || mutedColor;
+    const color = primary?.[1] || palette.axis;
     c.strokeStyle = color; c.fillStyle = color;
-    c.globalAlpha = primary ? 1 : .48;
+    c.globalAlpha = primary ? 1 : .75;
     c.lineWidth = primary ? 2.6 : 1.15;
     c.beginPath();
     c.moveTo(x(0),y(bank[0]));
@@ -270,11 +278,12 @@ for (let i=1; i<=8; i++) {
   btn.setAttribute('aria-label', `Show leg ${i} options`);btn.onclick=()=>{legNo=i;paint();};
   $('legs').append(btn);
 }
-for (const [key,[label,color]] of [...series, ['others', ['Other ticket entries', mutedColor]]]) {
+for (const [key,[label,color]] of [...series, ['others', ['Other ticket entries', palette.axis]]]) {
   const item = element('span', null, 'series-label');
   item.dataset.entry = key;
-  item.hidden = key === 'others';
+  item.hidden = true;
   const swatch = element('i', null, 'swatch');
+  swatch.setAttribute('aria-hidden', 'true');
   swatch.style.color = color;
   item.append(swatch, label);
   $('legend').append(item);
@@ -293,6 +302,7 @@ $('play').onclick=()=>{
   playing=true;lastFrame=null;paint();requestAnimationFrame(frame);
 };
 $('restart').onclick=()=>{playing=false;lastFrame=null;clear();};
+$('show-topics').onchange = event => $('feed').classList.toggle('show-topics', event.target.checked);
 $('open-file').onclick=()=>$('file').click();
 $('file').onchange=async event=>{
   const file=event.target.files[0];

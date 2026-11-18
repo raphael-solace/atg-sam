@@ -2,23 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V85 Relay · Basic vs optimized prompts</title>
+<title>ATG V85 · Basic vs optimized prompts</title>
+<link rel="stylesheet" href="theme.css?v=4">
 <style>
-:root{color-scheme:dark;--base:#101715;--panel:#19231f;--line:#2f4137;--text:#e7f3eb;--dim:#a1b8ab;--green:#6ff7ba;--basic:#a8bffd;--loss:#f1ad9d;--mono:"IBM Plex Mono",ui-monospace,monospace}
-*{box-sizing:border-box}body{margin:0;background:var(--base);color:var(--text);font:15px/1.45 "Geist",system-ui,sans-serif}.page{width:min(1260px,calc(100% - 48px));margin:auto}
-header{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}header strong{letter-spacing:-.04em}a{color:var(--green)}header a{font-size:.8rem}
-h1{font-size:clamp(2.4rem,5.15vw,4.25rem);letter-spacing:-.069em;line-height:1.04;margin:8px 0 6px}h2{font-size:1.26rem;letter-spacing:-.04em;margin:0}p{margin:4px 0;color:var(--dim)}
-.hero{padding:23px 0 15px}.kicker,.small{font:600 .69rem var(--mono);letter-spacing:.09em;color:var(--green);text-transform:uppercase}
-.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}.tag{border:1px solid var(--line);padding:5px 8px;border-radius:6px;font:500 .7rem var(--mono);color:#b3c8bc}
-.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;margin-top:12px}.panel{min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:11px;overflow:hidden}.panel header{padding:14px 16px 9px;border:0;display:block}.panel header p{font-size:.78rem}.pad{padding:6px 16px 12px}.selectors{display:flex;gap:4px;flex-wrap:wrap}.selectors button{padding:4px 7px;cursor:pointer;border:1px solid var(--line);border-radius:5px;background:#1c2c24;color:var(--dim);font:500 .73rem system-ui}.selectors button[aria-pressed=true]{color:#0a2f1d;background:var(--green);border-color:var(--green);font-weight:700}.selectors button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
-canvas{width:100%;height:238px;display:block}.legend{font-size:.73rem;display:flex;gap:13px;color:var(--dim)}.legend b{font-weight:700}.basic{color:var(--basic)}.optimized{color:var(--green)}.result-table{margin-top:12px}
-.scroll{overflow:auto}.score{border-collapse:collapse;width:100%;white-space:nowrap;font-variant-numeric:tabular-nums}.score th,.score td{border-top:1px solid var(--line);padding:8px 11px;text-align:right;font-size:.78rem}.score th{color:var(--dim);background:#16221d;font-family:var(--mono);font-size:.67rem}.score :is(td,th):first-child{text-align:left;padding-left:16px}.score :is(td,th):last-child{padding-right:16px}.gain{color:var(--green)}.loss{color:var(--loss)}
-.notes{color:var(--dim);font-size:.8rem;margin:13px 0 25px}.notes p{margin:7px 0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 var(--font)}.page{width:min(1260px,calc(100% - 48px));margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line)}header strong{letter-spacing:-.04em}a{color:var(--blue)}header a{font-size:.8rem}
+h1{font-size:clamp(2.4rem,5.15vw,4.25rem);letter-spacing:-.069em;line-height:1.04;margin:8px 0 6px}h2{font-size:1.26rem;letter-spacing:-.04em;margin:0}p{margin:4px 0;color:var(--muted)}
+.hero{padding:23px 0 15px}.kicker,.small{font:600 .69rem var(--mono);letter-spacing:.09em;color:var(--blue);text-transform:uppercase}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}.tag{border:1px solid var(--line);padding:5px 8px;border-radius:6px;font:500 .7rem var(--mono);color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;margin-top:12px}.panel{min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:11px;overflow:hidden}.panel header{padding:14px 16px 9px;border:0;display:block}.panel header p{font-size:.78rem}.pad{padding:6px 16px 12px}.selectors{display:flex;gap:4px;flex-wrap:wrap}.selectors button{padding:4px 7px;cursor:pointer;border:1px solid var(--line);border-radius:5px;background:var(--tint);color:var(--muted);font:500 .73rem system-ui}.selectors button[aria-pressed=true]{color:white;background:var(--blue);border-color:var(--blue);font-weight:700}.selectors button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+canvas{width:100%;height:238px;display:block}.legend{font-size:.73rem;display:flex;gap:13px;color:var(--muted)}.legend b{font-weight:700}.basic{color:var(--muted)}.optimized{color:var(--blue)}.result-table{margin-top:12px}
+.scroll{overflow:auto}.score{border-collapse:collapse;width:100%;white-space:nowrap;font-variant-numeric:tabular-nums}.score th,.score td{border-top:1px solid var(--line);padding:8px 11px;text-align:right;font-size:.78rem}.score th{color:var(--muted);background:var(--tint);font-family:var(--mono);font-size:.67rem}.score :is(td,th):first-child{text-align:left;padding-left:16px}.score :is(td,th):last-child{padding-right:16px}.gain{color:var(--gain)}.loss{color:var(--loss)}
+.notes{color:var(--muted);font-size:.8rem;margin:13px 0 25px}.notes p{margin:7px 0}
 @media(max-width:770px){.page{width:calc(100% - 26px)}.grid{grid-template-columns:1fr}.hero h1{letter-spacing:-.06em}}
+
+header.page{color:var(--navy);border-bottom:3px solid var(--yellow)}
 </style>
 </head>
 <body>
-<header class="page"><strong>V85 Relay / Prompt study</strong><a href="./" id="replay-link" hidden>← Recorded replay</a></header>
+<header class="page"><strong>ATG V85 / Prompt study</strong><a href="./">← Recorded replay</a></header>
 <main class="page">
 <div class="hero"><div class="kicker">Historical V85 · Matched comparison</div><h1>Did the optimized prompt pay off?</h1>
 <p>Same race cards, model routes and 500 SEK budget. The optimized draft was picked using only the earlier weeks.</p>
@@ -89,7 +91,8 @@ Prioritize a lean ticket. Choose an explicit count for each of the eight legs be
 'use strict';
 const data=JSON.parse(document.getElementById('data').textContent);
 const $=id=>document.getElementById(id);
-if(location.pathname.includes('/atg-sam/'))$('replay-link').hidden=false;
+const theme = getComputedStyle(document.documentElement);
+const themeColor = name => theme.getPropertyValue('--' + name).trim();
 const format=n=>new Intl.NumberFormat('en',{maximumFractionDigits:0,signDisplay:'exceptZero'}).format(n);
 let active=0;
 function canvas(id,draw){
@@ -105,11 +108,11 @@ function curve(){
   const min=Math.floor(lo/step)*step,max=Math.ceil(hi/step)*step;
   const win=max-min, left=65,right=w-14,top=15,bottom=h-27;
   const X=i=>left+(right-left)*i/(a.basic.bankroll.length-1),Y=n=>bottom-(bottom-top)*(n-min)/win;
-  c.fillStyle='#a1b8ab';c.textAlign='right';
-  for(let j=0;j<=4;j++){const n=min+j*win/4;line(c,left,Y(n),right,Y(n),'#31453a');c.fillText(format(n),left-7,Y(n)+4);}
-  line(c,left,Y(0),right,Y(0),'#627c6c');
+  c.fillStyle=themeColor('muted');c.textAlign='right';
+  for(let j=0;j<=4;j++){const n=min+j*win/4;line(c,left,Y(n),right,Y(n),themeColor('line'));c.fillText(format(n),left-7,Y(n)+4);}
+  line(c,left,Y(0),right,Y(0),themeColor('axis'));
   c.textAlign='center';for(let i=0;i<a.basic.bankroll.length;i++)if(i===0||i%3===0)c.fillText(i?i:'Start',X(i),h-7);
-  for(const [series,color] of [[a.basic.bankroll,'#a8bffd'],[a.optimized.bankroll,'#6ff7ba']]){
+  for(const [series,color] of [[a.basic.bankroll,themeColor('axis')],[a.optimized.bankroll,themeColor('blue')]]){
    c.strokeStyle=color;c.lineWidth=2.4;c.beginPath();
    series.forEach((n,i)=>i?c.lineTo(X(i),Y(n)):c.moveTo(X(i),Y(n)));c.stroke();
    c.fillStyle=color;c.beginPath();const i=series.length-1;c.arc(X(i),Y(series[i]),3,0,Math.PI*2);c.fill();
@@ -121,15 +124,15 @@ function change(){
   const values=data.flatMap(r=>r.paired_net_sek_95),min=Math.min(0,...values),max=Math.max(1,...values);
   const left=Math.min(143,w*.35),right=w-26,top=8,bottom=h-33;
   const X=n=>left+(right-left)*(n-min)/(max-min);
-  line(c,X(0),top,X(0),bottom,'#77907e');
+  line(c,X(0),top,X(0),bottom,themeColor('axis'));
   data.forEach((r,i)=>{
    const y=top+(bottom-top)*(i+.5)/data.length;
    const v=r.optimized.net_sek-r.basic.net_sek,[a,b]=r.paired_net_sek_95;
-   c.fillStyle='#b3c8bc';c.textAlign='right';c.fillText(r.label,left-8,y+4,left-10);
-   line(c,X(a),y,X(b),y,'#779683',2);line(c,X(a),y-4,X(a),y+4,'#779683');line(c,X(b),y-4,X(b),y+4,'#779683');
-   c.fillStyle=v<0?'#f1ad9d':'#6ff7ba';c.beginPath();c.arc(X(v),y,4,0,Math.PI*2);c.fill();
+   c.fillStyle=themeColor('muted');c.textAlign='right';c.fillText(r.label,left-8,y+4,left-10);
+   line(c,X(a),y,X(b),y,themeColor('axis'),2);line(c,X(a),y-4,X(a),y+4,themeColor('axis'));line(c,X(b),y-4,X(b),y+4,themeColor('axis'));
+   c.fillStyle=v<0?themeColor('loss'):themeColor('blue');c.beginPath();c.arc(X(v),y,4,0,Math.PI*2);c.fill();
   });
-  c.fillStyle='#a1b8ab';c.textAlign='center';for(const n of [min,0,max])c.fillText(format(n),X(n),h-9);
+  c.fillStyle=themeColor('muted');c.textAlign='center';for(const n of [min,0,max])c.fillText(format(n),X(n),h-9);
  });
 }
 data.forEach((r,i)=>{

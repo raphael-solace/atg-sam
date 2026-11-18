@@ -1,57 +1,91 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Replay recorded V85 model decisions and outcomes, one Solace topic at a time.">
-<title>V85 Relay · Solace replay</title>
-<link rel="stylesheet" href="style.css?v=3">
-<script defer src="app.js?v=3"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Replay ten weeks of V85 model picks and official race results.">
+  <title>ATG V85 replay · Solace demo</title>
+  <link rel="stylesheet" href="theme.css?v=4">
+  <link rel="stylesheet" href="style.css?v=4">
+  <script defer src="app.js?v=4"></script>
 </head>
 <body>
-<header class="page mast"><div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> V85 Relay <span class="split">/</span> <small>SOLACE PUBSUB+</small></div><span class="source"><i></i><span id="source">Recorded replay</span></span></header>
-<main class="page">
-  <div class="hero">
-    <div><h1>Who wins the V85?</h1><p>Watch model tickets and official settlements unfold over ten recorded rounds.</p></div>
-    <div class="actions"><a class="file" href="payout-builder.html">Ticket builders <span aria-hidden="true">↗</span></a>
-    <a class="file" href="prompt-study.html">Prompt study <span aria-hidden="true">↗</span></a>
-    <button type="button" class="file" id="open-file">Open event log <span aria-hidden="true">↗</span></button></div>
-    <input type="file" id="file" accept=".json,.jsonl,application/json,text/plain" hidden>
-  </div>
-  <section class="controls" aria-label="Playback">
-    <button id="play" class="play" disabled>Play replay</button><button id="restart" class="quiet" title="Restart replay" disabled>Reset</button>
-    <label class="speed">Speed <select id="speed" aria-label="Replay speed"><option value="1">1×</option><option value="5" selected>5×</option><option value="20">20×</option></select></label>
-    <div id="weeks" class="weeks" aria-label="Jump to a settled week"></div>
-    <span id="time" class="clock">0:00 / 4:59</span>
-  </section>
-  <div id="notice" class="notice" role="status"></div>
-  <div class="grid">
-    <section class="panel stream">
-      <div class="panel-head"><div><div class="eyebrow">Solace topics · ATG-style demo</div><h2>Event stream</h2></div><span class="pill" id="event-count">0 events</span></div>
-      <div class="racebar"><div><strong id="round">Round 01</strong><span id="phase">Ready to replay</span></div><div id="legs" class="legs" aria-label="Race options"></div></div>
-      <div class="options" id="options">The runner options appear when the first race card arrives.</div>
-      <div class="feed" id="feed" aria-label="Most recent events"><div class="placeholder">Press Play to receive the first race card.</div></div>
-      <details class="council" id="topic-map"><summary>Solace topic map</summary>
-        <p>Illustrative addresses for this demo, based on the race, betting and analytics domains. ATG’s internal topic names have not been verified.</p>
-        <ul>
-          <li><code>atg/racing/v85/raceCard/published/v1/{round}/{leg}</code></li>
-          <li><code>atg/racing/v85/raceResult/confirmed/v1/{round}/{leg}</code></li>
-          <li><code>atg/betting/v85/pool/settled/v1/{round}</code></li>
-          <li><code>atg/analytics/v85/modelTicket/proposed/v1/{round}/{model}</code></li>
-          <li><code>atg/analytics/v85/leaderboard/updated/v1/{round}</code></li>
-        </ul>
-        <a href="https://docs.solace.com/Messaging/Topic-Architecture-Best-Practices.htm">Solace topic design guidance</a>
+  <header class="mast">
+    <div class="page mast-row">
+      <div class="brand"><strong>ATG</strong><span>Solace PubSub+ demo</span></div>
+      <span id="source">Recorded replay</span>
+    </div>
+  </header>
+  <main class="page">
+    <div class="hero">
+      <h1>V85 replay</h1>
+      <p>Model picks and official race results across ten weeks.</p>
+    </div>
+    <section class="controls" aria-label="Playback">
+      <div class="playback">
+        <button id="play" class="play" disabled>Play replay</button>
+        <button id="restart" class="quiet" disabled>Reset</button>
+        <select id="speed" aria-label="Replay speed">
+          <option value="1">1×</option>
+          <option value="5" selected>5×</option>
+          <option value="20">20×</option>
+        </select>
+      </div>
+      <div class="week-picker">
+        <span>Week</span>
+        <div id="weeks" class="weeks" aria-label="Jump to a settled week"></div>
+      </div>
+      <span id="time" class="clock">0:00 / 4:59</span>
+    </section>
+    <div id="notice" class="notice" role="status"></div>
+    <div class="grid">
+      <section class="panel stream" aria-labelledby="events-title">
+        <div class="panel-head">
+          <h2 id="events-title">Solace events</h2>
+          <label class="topic-toggle"><input type="checkbox" id="show-topics" aria-controls="feed"> Show topics</label>
+        </div>
+        <div class="racebar">
+          <div><strong id="round">Week 1</strong><span id="phase">Ready to replay</span></div>
+          <div id="legs" class="legs" aria-label="Show runners by leg"></div>
+        </div>
+        <div class="options" id="options" hidden></div>
+        <div class="feed" id="feed" aria-label="Most recent events">
+          <div class="placeholder">Press Play to see the first race card.</div>
+        </div>
+        <div class="event-count" id="event-count">0 events</div>
+      </section>
+      <section class="panel performance" id="performance" aria-labelledby="returns-title">
+        <div class="panel-head">
+          <h2 id="returns-title">Cumulative return <span>SEK</span></h2>
+          <span class="settled" id="settled">0 of 10 settled</span>
+        </div>
+        <div class="leader">
+          <div><span id="lead-caption">Featured agent</span><strong id="leader">Awaiting results</strong></div>
+          <div class="lead-value"><strong id="leader-roi">—</strong><span id="leader-net"></span></div>
+        </div>
+        <canvas id="chart" aria-label="Cumulative net return by settled week, including invalid-ticket penalties" role="img"></canvas>
+        <div class="legend" id="legend" aria-label="Chart series"></div>
+        <div class="table-wrap">
+          <table aria-label="Standings">
+            <thead><tr><th scope="col">Forecaster</th><th scope="col">ROI rank</th><th scope="col">Net SEK</th><th scope="col">ROI</th><th scope="col">Log loss</th></tr></thead>
+            <tbody id="scores"><tr><td colspan="5">Standings appear after the first week.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <footer>
+      <span id="basis">Historical replay · No bets placed</span>
+      <details class="extras">
+        <summary>Replay details</summary>
+        <nav aria-label="Replay resources">
+          <a href="payout-builder.html">Ticket builder study</a>
+          <a href="prompt-study.html">Prompt study</a>
+          <button type="button" id="open-file">Open event log</button>
+        </nav>
+        <p>The public replay uses anonymized runners and illustrative Solace topics.</p>
       </details>
-    </section>
-    <section class="panel performance" id="performance">
-      <div class="panel-head"><div><div class="eyebrow" id="settled">0 OF 10 SETTLED</div><h2>Cumulative return</h2></div><span class="pill verified">NET SEK</span></div>
-      <div class="leader"><div><span id="lead-caption">HIGHEST ROI</span><strong id="leader">Awaiting results</strong></div><div class="lead-value"><strong id="leader-roi">—</strong><span id="leader-net"></span></div></div>
-      <canvas id="chart" aria-label="Cumulative net return by settled week, including invalid-ticket penalties" role="img"></canvas>
-      <div class="legend" id="legend" aria-label="Chart series"></div>
-      <div class="table-wrap"><table aria-label="Standings"><thead><tr><th scope="col">Forecaster</th><th scope="col">ROI rank</th><th scope="col">Net SEK</th><th scope="col">ROI</th><th scope="col" title="Lower is better">Log loss</th></tr></thead><tbody id="scores"><tr><td colspan="5">Standings arrive with each settlement.</td></tr></tbody></table></div>
-    </section>
-  </div>
-  <footer><span id="basis">Archived backtest · Anonymized runners · No bets placed</span><span>Ten rounds · Returns are indicative</span></footer>
-</main>
+      <input type="file" id="file" accept=".json,.jsonl,application/json,text/plain" hidden>
+    </footer>
+  </main>
 </body>
 </html>

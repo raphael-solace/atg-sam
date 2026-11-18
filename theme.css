@@ -1,0 +1,18 @@
+:root {
+  color-scheme: light;
+  --navy: #082653;
+  --blue: #0054ab;
+  --yellow: #ffde36;
+  --gold: #946000;
+  --bg: #edf3fa;
+  --panel: #fff;
+  --tint: #f3f7fc;
+  --line: #d8e3f0;
+  --text: #102a4e;
+  --muted: #4d6482;
+  --axis: #8b9fbc;
+  --gain: #0b6e46;
+  --loss: #a23935;
+  --font: Inter, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
