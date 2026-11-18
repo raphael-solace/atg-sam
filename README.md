@@ -10,6 +10,8 @@ The GPT-6 Astra council routes to one available GPT, Gemini and Claude forecast 
 
 The **Prompt study** page compares basic and selective-value prompting in a separate matched backtest. Only aggregate model performance and the prompt change are published.
 
+**Skill and chance** reports the 55-round official archive, including 32 walk-forward evaluations of a market-anchored Orchestrator3, voluntary passes, and randomized tickets matched on stake and shape.
+
 **Ticket builders** compares the original coverage builder, a payout-aware builder at exactly the same stake, and a selective policy on a separate 15-round holdout. The Pages deployment contains aggregate performance only.
 
 

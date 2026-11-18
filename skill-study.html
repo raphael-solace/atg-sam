@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATG V85 · Skill and chance</title>
+<style>
+:root{color-scheme:light;--navy:#082653;--blue:#0054ab;--gold:#946000;--yellow:#ffde36;--paper:#fff;--bg:#edf3fa;--line:#d8e3f0;--muted:#4d6482}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--navy);font:15px/1.5 Inter,system-ui,sans-serif}.page{width:min(1130px,calc(100% - 32px));margin:auto}
+header{border-bottom:3px solid var(--yellow);background:var(--navy);color:#fff}header .page{display:flex;min-height:55px;align-items:center;justify-content:space-between}header strong{color:var(--yellow)}header a{color:#fff;font-size:.82rem}h1,h2,p{margin:0}h1{margin:24px 0 4px;font-size:clamp(2rem,5vw,3.2rem);letter-spacing:-.05em;line-height:1.05}h2{font-size:1.15rem;letter-spacing:-.025em}.hero p,.panel p,li{color:var(--muted)}.hero{margin-bottom:18px}
+.panel{margin:12px 0;border:1px solid var(--line);border-radius:10px;background:var(--paper);overflow:hidden}.panel-head{padding:12px 16px}.panel-head p{font-size:.82rem;margin-top:2px}.scroll{overflow:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{white-space:nowrap;padding:8px 10px;border-top:1px solid var(--line);text-align:right;font-size:.79rem}th{color:var(--muted);background:#f3f7fc}th:first-child,td:first-child{text-align:left;padding-left:16px}tr.featured td{background:#fff9df}
+canvas{width:100%;height:250px;display:block}.key{display:flex;gap:14px;flex-wrap:wrap;padding:1px 16px 11px;font-size:.78rem}.key span{color:var(--muted)}.key i{display:inline-block;width:12px;margin-right:5px;border-top:2px solid;vertical-align:middle}
+.notes{padding:0 16px 14px;font-size:.83rem}.notes p+p{margin-top:7px}details{margin-top:9px}summary{cursor:pointer;color:var(--blue)}details ul{margin:5px 0 0;padding-left:22px}footer{color:var(--muted);font-size:.78rem;margin:14px 0 24px}
+</style>
+</head>
+<body>
+<header><div class="page"><strong>ATG · V85 study</strong><a id="replay" href="./" hidden>Replay</a></div></header>
+<main class="page">
+  <div class="hero">
+    <h1>Skill and chance</h1>
+    <p>55 official Saturday rounds · 23 earlier rounds to seed the fit · 32 rounds scored from 2026-04-04 to 2026-11-14.</p>
+  </div>
+  <section class="panel">
+    <div class="panel-head"><h2>Orchestrator3 net return</h2><p>Cumulative SEK across 32 scored rounds. A pass leaves the curve flat for that week.</p></div>
+    <canvas id="chart" role="img" aria-label="Orchestrator3 returns for coverage and selective tickets and the market-only selective control"></canvas>
+    <div class="key"><span><i style="color:#0054ab"></i>Orchestrator3 coverage</span><span><i style="color:#946000"></i>Orchestrator3 selective</span><span><i style="color:#8096b3"></i>Market selective</span></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>Walk-forward results</h2><p>Coverage plays every round. Selective tickets must clear a projected payout threshold.</p></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Participant</th><th>Coverage net</th><th>Selective net</th><th>Played</th><th>Selective stake</th><th>Selective ROI</th><th>Random matched or beat</th><th>Skill vs market</th></tr></thead>
+      <tbody>
+        <tr class="featured">
+          <td>Orchestrator3</td><td>-9,608</td>
+          <td>-1,606</td><td>8/32</td>
+          <td>2,118 SEK</td>
+          <td>-75.8%</td>
+          <td>27.1%</td>
+          <td>-0.02%</td>
+        </tr>
+        <tr>
+          <td>GPT-6 Luna</td><td>-6,458</td>
+          <td>-2,072</td><td>9/32</td>
+          <td>2,790 SEK</td>
+          <td>-74.3%</td>
+          <td>27.1%</td>
+          <td>-0.18%</td>
+        </tr>
+        <tr>
+          <td>Claude Haiku 5.5</td><td>-8,780</td>
+          <td>-1,828</td><td>8/32</td>
+          <td>2,718 SEK</td>
+          <td>-67.3%</td>
+          <td>24.1%</td>
+          <td>+0.03%</td>
+        </tr>
+        <tr>
+          <td>Gemini 3.8 Flash</td><td>-9,548</td>
+          <td>-2,363</td><td>9/32</td>
+          <td>3,450 SEK</td>
+          <td>-68.5%</td>
+          <td>21.8%</td>
+          <td>-0.25%</td>
+        </tr>
+        <tr>
+          <td>V85 market control</td><td>-9,692</td>
+          <td>-1,030</td><td>5/32</td>
+          <td>1,470 SEK</td>
+          <td>-70.1%</td>
+          <td>21.2%</td>
+          <td>+0.00%</td>
+        </tr>
+      </tbody>
+    </table></div>
+    <div class="notes">
+      <p>Orchestrator3’s biggest selective payout was 288 SEK. Removing that payout leaves -1894 SEK net. The paired 95% interval for the change in net was +3670 to +11076 SEK.</p>
+      <p>On the same ten demo weeks, the original Orchestrator3 returned +462 SEK. The mechanical coverage policy returned -4191 SEK, and its selective policy returned -216 SEK on 1 plays.</p>
+      <p>4.2% of matched random portfolios equalled or exceeded the original ten-week result. Without its largest payout, the original Orchestrator3 finished at -2106 SEK. The random portfolios also incurred the original invalid-ticket penalties.</p>
+      <details><summary>How the comparison works</summary><ul>
+        <li>Orchestrator3 gives the public V85 shares at least 50% weight and fits the remaining blend of model and public forecasts using strictly earlier rounds.</li>
+        <li>Every forecast runs through the same coverage and payout-aware policies. The selective policy plays only when projected payout exceeds stake by 5%. Voluntary passes cost 0 SEK. Forecast failures use the public share distribution and are counted separately.</li>
+        <li>10,000 randomized ticket portfolios draw runners from the public shares while matching each policy’s actual weeks played, ticket widths and stake. This isolates the runner selections from bet timing. The fraction matching or beating the result is conditional on the archived settlements.</li>
+        <li>Forecast skill is the percentage reduction in log loss versus public V85 shares. Orchestrator3’s 95% interval was -0.13% to +0.08%. Bootstrap intervals resample whole scored rounds. Archived shares, runner statistics and scratchings have limited timing metadata.</li>
+        <li>The forecasts came from LiteLLM. The extended benchmark does not use individual-leg win odds. June 20 had no V85 Saturday round.</li>
+      </ul></details>
+    </div>
+  </section>
+  <footer>Historical simulation · No bets placed</footer>
+</main>
+<script>
+'use strict';
+if (location.pathname.endsWith('/skill-study.html')) document.getElementById('replay').hidden = false;
+const values = [[0, -420.0, -606.0, -1092.0, -1524.0, -1866.0, -2150.0, -2636.0, -2834.0, -3266.0, -3610.0, -4096.0, -2746.0, -3016.0, -3502.0, -3748.0, -4126.0, -4468.0, -4747.0, -5099.0, -5399.0, -5759.0, -5417.0, -5849.0, -6281.0, -6713.0, -7145.0, -7577.0, -8009.0, -8441.0, -8765.0, -9176.0, -9608.0], [0, 0.0, -168.0, -492.0, -852.0, -852.0, -940.0, -940.0, -1138.0, -1138.0, -1138.0, -1138.0, -1138.0, -1138.0, -1138.0, -1138.0, -1246.0, -1246.0, -1246.0, -1246.0, -1246.0, -1390.0, -1390.0, -1390.0, -1390.0, -1390.0, -1390.0, -1390.0, -1390.0, -1390.0, -1390.0, -1390.0, -1606.0], [0, 0.0, -168.0, -168.0, -528.0, -528.0, -616.0, -616.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -814.0, -1030.0]];
+const chart = document.getElementById('chart');
+function draw() {
+  const w = chart.clientWidth, h = chart.clientHeight, pixel = devicePixelRatio || 1;
+  chart.width = w * pixel;
+  chart.height = h * pixel;
+  const c = chart.getContext('2d');
+  c.scale(pixel, pixel);
+  const points = values.flat();
+  const lo = Math.min(-500, ...points), hi = Math.max(500, ...points);
+  const n = values[0].length - 1;
+  const y = v => h - 28 - (h - 45) * (v-lo) / (hi-lo);
+  const x = i => 65 + (w - 82) * i / n;
+  c.font = '11px system-ui';
+  c.fillStyle = '#4d6482';
+  c.textAlign = 'right';
+  for (const v of [...new Set([lo, (lo + hi) / 2, 0, hi])]) {
+    c.strokeStyle = v === 0 ? '#8096b3' : '#d8e3f0';
+    c.beginPath(); c.moveTo(x(0), y(v)); c.lineTo(x(n), y(v)); c.stroke();
+    c.fillText(Math.round(v).toLocaleString('en-GB'), x(0)-8, y(v)+4);
+  }
+  const colors = ['#0054ab', '#946000', '#8096b3'];
+  for (const index of [2,0,1]) {
+    c.strokeStyle = colors[index];
+    c.lineWidth = index === 2 ? 1.5 : 2.5;
+    c.beginPath();
+    values[index].forEach((v,i) => i ? c.lineTo(x(i), y(v)) : c.moveTo(x(i), y(v)));
+    c.stroke();
+  }
+  c.textAlign = 'center';
+  for (const i of [0,8,16,24,n]) c.fillText(i || 'Start', x(i), h-10);
+}
+new ResizeObserver(draw).observe(chart);
+</script>
+</body>
+</html>
