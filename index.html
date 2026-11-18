@@ -6,8 +6,8 @@
   <meta name="description" content="Replay ten weeks of V85 model picks and official race results.">
   <title>ATG V85 replay · Solace demo</title>
   <link rel="stylesheet" href="theme.css?v=4">
-  <link rel="stylesheet" href="style.css?v=5">
-  <script defer src="app.js?v=5"></script>
+  <link rel="stylesheet" href="style.css?v=6">
+  <script defer src="app.js?v=6"></script>
 </head>
 <body>
   <header class="mast">
@@ -63,8 +63,14 @@
           <div><span id="lead-caption">Featured agent</span><strong id="leader">Awaiting results</strong></div>
           <div class="lead-value"><strong id="leader-roi">—</strong><span id="leader-net"></span></div>
         </div>
-        <canvas id="chart" aria-label="Cumulative net return by settled week, including invalid-ticket penalties" role="img"></canvas>
+        <canvas id="chart" tabindex="-1" aria-label="Cumulative net return by settled week"
+                aria-describedby="chart-help" role="img"></canvas>
         <div class="legend" id="legend" aria-label="Chart series"></div>
+        <p id="chart-help" class="visually-hidden">Hover or tap a line to inspect returns. Use the left and right arrow keys to change weeks and Escape to close.</p>
+        <section id="chart-inspector" class="chart-inspector" aria-labelledby="chart-week" hidden>
+          <h3 id="chart-week" aria-live="polite"></h3>
+          <ul id="chart-values"></ul>
+        </section>
       </section>
     </div>
     <section class="panel participants" aria-labelledby="participants-title">

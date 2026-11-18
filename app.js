@@ -32,16 +32,20 @@ function parseTopic(topic) {
   return null;
 }
 const theme = getComputedStyle(document.documentElement);
-const palette = Object.fromEntries(['blue', 'gold', 'axis', 'line', 'muted']
+const palette = Object.fromEntries(['navy', 'blue', 'gold', 'axis', 'line', 'muted']
   .map(name => [name, theme.getPropertyValue(`--${name}`).trim()]));
 const series = new Map([
   ['o3', ['Orchestrator3', palette.blue]],
   ['gpt6_luna', ['GPT-6 Luna', palette.gold]],
 ]);
 const sek = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 0, signDisplay: 'exceptZero'});
+const preciseSek = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 2, signDisplay: 'exceptZero'});
 const pct = new Intl.NumberFormat('en-GB', {style: 'percent', maximumFractionDigits: 1, minimumFractionDigits: 1, signDisplay: 'exceptZero'});
 const fmtTime = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 const excludedParticipants = new Set(['harry_boy', 'crowd', 'win_odds']);
+const chart = $('chart');
+const inspector = $('chart-inspector');
+let chartView, inspection = null;
 let replay = [], settlements = [], playing = false, elapsed = 0, cursor = 0, lastFrame = null;
 let participants = [];
 let roundKey, roundNo, legNo, cards, winners, board, settled, phase, imported = false;
@@ -66,6 +70,7 @@ function clear() {
   roundNo = 1;
   board = [];
   settled = 0;
+  inspection = null;
   clearRound();
   phase = 'Ready to replay';
   $('feed').replaceChildren(element('div', 'Press Play to see the first race card.', 'placeholder'));
@@ -244,11 +249,66 @@ function paint() {
   plot();
 }
 
+function selectChartWeek(week, names = []) {
+  if ((!inspection && week == null) ||
+      (inspection?.week === week && inspection.names.size === names.length &&
+       names.every(name => inspection.names.has(name)))) return;
+  inspection = week == null ? null : {week, names: new Set(names)};
+  plot();
+}
+
+function inspectPoint(event) {
+  const {tracks, x, y, lastWeek} = chartView || {};
+  if (!lastWeek) return;
+  const bounds = chart.getBoundingClientRect();
+  const horizontal = event.clientX - bounds.left;
+  const vertical = event.clientY - bounds.top;
+  if (horizontal < x(0) - 7 || horizontal > x(lastWeek) + 7) {
+    selectChartWeek(null);
+    return;
+  }
+  const position = Math.max(0, Math.min(lastWeek, (horizontal - x(0)) / (x(1) - x(0))));
+  const left = Math.floor(position);
+  const distances = tracks.flatMap(({name, bankroll}) => {
+    const from = bankroll[left];
+    const to = bankroll[Math.ceil(position)];
+    if (from == null || to == null) return [];
+    const height = y(from + (to - from) * (position - left));
+    return [{name, distance: Math.abs(vertical - height)}];
+  });
+  const nearest = Math.min(...distances.map(point => point.distance));
+  const matches = distances.filter(point => point.distance <= Math.min(9, nearest + 2));
+  selectChartWeek(Math.round(position), matches.map(point => point.name));
+}
+
+function renderInspection(tracks) {
+  inspector.hidden = !inspection;
+  if (!inspection) return;
+  const {week, names} = inspection;
+  const title = week ? `Week ${week} · Net SEK` : 'Start · Net SEK';
+  if ($('chart-week').textContent !== title) $('chart-week').textContent = title;
+  const entries = tracks.filter(entry => entry.bankroll[week] != null)
+    .sort((a, b) => b.bankroll[week] - a.bankroll[week] || a.label.localeCompare(b.label));
+  $('chart-values').replaceChildren(...entries.map(({name, label, bankroll}) => {
+    const value = bankroll[week];
+    const item = element('li', null, names.has(name) ? 'near-line' : '');
+    item.append(element('span', label),
+      element('span', preciseSek.format(value), 'chart-return'));
+    return item;
+  }));
+}
+
 function plot() {
-  const cn = $('chart'), w = cn.clientWidth, h = cn.clientHeight, px = devicePixelRatio || 1;
+  const w = chart.clientWidth, h = chart.clientHeight, px = devicePixelRatio || 1;
   if (!w || !h) return;
-  cn.width = w * px; cn.height = h * px;
-  const c = cn.getContext('2d'); c.scale(px,px);
+  const pixelWidth = Math.round(w * px), pixelHeight = Math.round(h * px);
+  if (chart.width !== pixelWidth || chart.height !== pixelHeight) {
+    chart.width = pixelWidth;
+    chart.height = pixelHeight;
+  }
+  const c = chart.getContext('2d');
+  c.setTransform(px, 0, 0, px, 0, 0);
+  c.clearRect(0, 0, w, h);
   const tickets = (board || []).filter(entry => entry.bankroll.length > 1);
   const tracks = [...tickets.filter(entry => !series.has(entry.name)),
                   ...[...series.keys()].reverse().map(name => tickets.find(entry => entry.name === name)).filter(Boolean)];
@@ -256,7 +316,12 @@ function plot() {
   const min = Math.floor(Math.min(-1000,...points)/1000)*1000, max = Math.ceil(Math.max(1000,...points)/1000)*1000;
   const total = settlements.length || 10, start = 61, end = w - 18, base = h - 31, top = 16;
   const x = i => start + i / total * (end - start), y = v => base - (v-min)/(max-min)*(base-top);
+  const lastWeek = Math.max(0, ...tracks.map(entry => entry.bankroll.length - 1));
+  chartView = {tracks, x, y, lastWeek};
+  chart.tabIndex = lastWeek ? 0 : -1;
+  if (inspection && (!lastWeek || inspection.week > lastWeek)) inspection = null;
   c.font = '11px system-ui'; c.textAlign = 'right';
+  c.lineWidth = 1;
   for (let v=min; v<=max; v+=1000) {
     c.strokeStyle = v === 0 ? palette.axis : palette.line;
     c.beginPath(); c.moveTo(start,y(v));c.lineTo(end,y(v));c.stroke();
@@ -270,19 +335,38 @@ function plot() {
     }
   }
   if (!points.length) c.fillText('Returns appear as weeks settle.',(start+end)/2,(top+base)/2-13);
-  for (const {name, bankroll: bank} of tracks) {
+  const active = inspection?.names ?? new Set();
+  if (inspection) {
+    const guide = x(inspection.week);
+    c.strokeStyle = palette.axis;
+    c.setLineDash([3, 3]);
+    c.beginPath();
+    c.moveTo(guide, top);
+    c.lineTo(guide, base);
+    c.stroke();
+    c.setLineDash([]);
+  }
+  const layered = [...tracks.filter(entry => !active.has(entry.name)), ...tracks.filter(entry => active.has(entry.name))];
+  for (const {name, bankroll: bank} of layered) {
     const primary = series.get(name);
-    const color = primary?.[1] || palette.axis;
+    const highlighted = active.has(name);
+    const color = primary?.[1] || (highlighted ? palette.navy : palette.axis);
     c.strokeStyle = color; c.fillStyle = color;
-    c.globalAlpha = primary ? 1 : .75;
-    c.lineWidth = primary ? 2.6 : 1.15;
+    c.globalAlpha = primary || highlighted ? 1 : .75;
+    c.lineWidth = highlighted ? 3.4 : primary ? 2.6 : 1.15;
     c.beginPath();
     c.moveTo(x(0),y(bank[0]));
     for (let i=1; i<bank.length; i++) c.lineTo(x(i),y(bank[i]));
     c.stroke();
-    if (primary) { const i=bank.length-1;c.beginPath();c.arc(x(i),y(bank[i]),3,0,Math.PI*2);c.fill(); }
+    const marker = highlighted ? inspection.week : primary ? bank.length - 1 : null;
+    if (marker != null && bank[marker] != null) {
+      c.beginPath();
+      c.arc(x(marker), y(bank[marker]), highlighted ? 4 : 3, 0, Math.PI * 2);
+      c.fill();
+    }
   }
   c.globalAlpha = 1;
+  renderInspection(tracks);
 }
 
 for (let i=1; i<=8; i++) {
@@ -332,7 +416,32 @@ $('file').onchange=async event=>{
   } catch (e) { $('notice').textContent=e.message; }
   event.target.value='';
 };
-new ResizeObserver(plot).observe($('chart'));
+chart.addEventListener('pointermove', event => {
+  if (event.pointerType !== 'touch') inspectPoint(event);
+});
+$('performance').addEventListener('pointerleave', event => {
+  if (event.pointerType !== 'touch') selectChartWeek(null);
+});
+chart.addEventListener('pointerup', event => {
+  if (event.pointerType === 'touch') inspectPoint(event);
+});
+chart.addEventListener('focus', () => {
+  if (!inspection && chartView?.lastWeek) selectChartWeek(chartView.lastWeek);
+});
+chart.addEventListener('blur', () => selectChartWeek(null));
+chart.addEventListener('keydown', event => {
+  if (!chartView?.lastWeek) return;
+  const week = inspection?.week ?? chartView.lastWeek;
+  const choices = {ArrowLeft: Math.max(0, week - 1), ArrowRight: Math.min(chartView.lastWeek, week + 1),
+    Home: 0, End: chartView.lastWeek, Escape: null};
+  if (!Object.hasOwn(choices, event.key)) return;
+  event.preventDefault();
+  selectChartWeek(choices[event.key]);
+});
+document.addEventListener('click', event => {
+  if (event.target !== chart && !inspector.contains(event.target)) selectChartWeek(null);
+});
+new ResizeObserver(plot).observe(chart);
 fetch('replay.json?v=3').then(response=>{
   if (!response.ok) throw Error('The recorded replay could not load.');
   return response.json();
