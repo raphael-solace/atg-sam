@@ -40,6 +40,8 @@ const series = new Map([
 ]);
 const sek = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 0, signDisplay: 'exceptZero'});
 const preciseSek = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 2, signDisplay: 'exceptZero'});
+const amount = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 2});
+const ticketLegs = Array.from({length: 8}, (_, i) => i + 1);
 const pct = new Intl.NumberFormat('en-GB', {style: 'percent', maximumFractionDigits: 1, minimumFractionDigits: 1, signDisplay: 'exceptZero'});
 const fmtTime = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
 const excludedParticipants = new Set(['harry_boy', 'crowd', 'win_odds']);
@@ -49,6 +51,7 @@ let chartView, inspection = null;
 let replay = [], settlements = [], playing = false, elapsed = 0, cursor = 0, lastFrame = null;
 let participants = [];
 let roundKey, roundNo, legNo, cards, winners, board, settled, phase, imported = false;
+let tickets, programNumbers, rowPrice, settlement;
 
 function element(tag, content, className) {
   const node = document.createElement(tag);
@@ -61,6 +64,10 @@ function clearRound() {
   legNo = 1;
   cards = {};
   winners = {};
+  tickets = new Map();
+  programNumbers = {};
+  rowPrice = null;
+  settlement = null;
   phase = 'Race cards arriving';
 }
 
@@ -99,6 +106,15 @@ function install(events, personal) {
     }
   }
   participants = [...roster.values()].sort((a, b) => a.label.localeCompare(b.label));
+  const forecaster = $('ticket-model');
+  const selected = forecaster.value || 'o3';
+  forecaster.replaceChildren(...participants.map(({name, label}) => {
+    const option = element('option', label);
+    option.value = name;
+    return option;
+  }));
+  if (roster.has(selected)) forecaster.value = selected;
+  forecaster.disabled = !participants.length;
   $('source').textContent = personal ? 'Local event log' : 'Recorded replay';
   $('basis').textContent = personal ? 'Local file · Read in this browser only' : 'Historical replay · No bets placed';
   $('play').disabled = $('restart').disabled = false;
@@ -159,6 +175,8 @@ function receive(evt) {
     clearRound();
   }
   if (kind === 'snapshot') {
+    rowPrice = p.row_price_sek ?? rowPrice;
+    programNumbers[n] = p.program_numbers;
     cards[n] = p.options || (p.starters || []).filter(h => !h.scratched).map(h => ({
       id: h.start_number, text: `${h.start_number} ${h.horse}${h.win_odds ? ' · ' + h.win_odds : ''}`
     }));
@@ -166,6 +184,7 @@ function receive(evt) {
   } else if (kind === 'bet') {
     phase = 'Tickets locked';
     const name = /^(o3|orchestrator3)(-builder)?$/.test(n) ? 'Orchestrator3' : p.forecaster;
+    if (!n.endsWith('-builder')) tickets.set(n === 'orchestrator3' ? 'o3' : n, p);
     pushEvent(evt, 'bet', p.invalid ? `${name} · Invalid` :
       `${name}${n.endsWith('-builder') ? ' · Builder' : ''} · ${p.cost_sek} SEK`, p.ticket);
   } else if (kind === 'result') {
@@ -175,6 +194,7 @@ function receive(evt) {
     phase = 'Results arriving';
     pushEvent(evt, 'result', `Leg ${n} · ${deadHeat ? 'Dead heat' : 'Winner'} ${winners[n].join(' / ')}`);
   } else if (kind === 'payout') {
+    settlement = p;
     phase = 'Payout settled';
     pushEvent(evt, 'payout', 'Official settlement recorded');
   }
@@ -193,6 +213,134 @@ function paintClock() {
   const duration = Math.ceil(replay.at(-1).at);
   const next = `${fmtTime(cursor === replay.length ? duration : elapsed)} / ${fmtTime(duration)}`;
   if ($('time').textContent !== next) $('time').textContent = next;
+}
+
+function programNumber(leg, runner) {
+  return programNumbers[leg]?.[runner] ?? runner;
+}
+
+function countsByCorrectLegs(ticket, winnersByLeg) {
+  let counts = [1];
+  for (const leg of ticketLegs) {
+    const selected = ticket[leg];
+    const hits = selected.filter(runner => winnersByLeg[leg].includes(runner)).length;
+    const misses = selected.length - hits;
+    const next = Array(counts.length + 1).fill(0);
+    for (const [correct, count] of counts.entries()) {
+      next[correct] += count * misses;
+      next[correct + 1] += count * hits;
+    }
+    counts = next;
+  }
+  return counts;
+}
+
+function paintTicketPayout(entry, ticket, complete) {
+  $('ticket-payout').hidden = !settlement || !entry;
+  $('ticket-tiers').hidden = true;
+  $('ticket-net').hidden = true;
+  if (!settlement || !entry) return;
+  const stake = entry.assessed_stake_sek ?? entry.cost_sek;
+  if (entry.invalid) {
+    $('payout-formula').textContent = Number.isFinite(stake)
+      ? `No payout. The backtest charged a ${amount.format(stake)} SEK invalid-ticket penalty.`
+      : 'No payout for the invalid ticket.';
+    return;
+  }
+  if (!ticket || !complete || !settlement.tiers?.length) {
+    $('payout-formula').textContent = 'This recording has no complete payout breakdown.';
+    return;
+  }
+  const counts = countsByCorrectLegs(ticket, winners);
+  const tiers = [...settlement.tiers].sort((a, b) => b.correct - a.correct);
+  const payouts = tiers.map(tier => ({
+    ...tier,
+    rows: counts[tier.correct],
+    payoutOre: counts[tier.correct] * Math.round(tier.payout_per_row_sek * 100),
+  }));
+  const gross = payouts.reduce((total, tier) => total + tier.payoutOre, 0) / 100;
+  const terms = payouts.filter(tier => tier.payoutOre > 0)
+    .map(tier => `${amount.format(tier.rows)} × ${amount.format(tier.payout_per_row_sek)}`);
+  $('payout-formula').textContent = terms.length
+    ? `${terms.join(' + ')} = ${amount.format(gross)} SEK`
+    : 'No paid rows. Total payout 0 SEK.';
+  $('ticket-tier-rows').replaceChildren(...payouts.map(tier => {
+    const row = element('tr', null, tier.payoutOre > 0 ? 'paid-tier' : '');
+    const label = element('td', `${tier.correct} right`);
+    if (tier.jackpot_flag && tier.payout_per_row_sek === 0) {
+      label.append(element('small', 'Carried forward', 'tier-note'));
+    }
+    row.append(
+      label,
+      element('td', amount.format(tier.rows)),
+      element('td', amount.format(tier.payout_per_row_sek)),
+      element('td', amount.format(tier.payoutOre / 100)),
+    );
+    return row;
+  }));
+  $('ticket-tiers').hidden = false;
+  if (!Number.isFinite(stake)) return;
+  const net = Math.round((gross - stake) * 100) / 100;
+  $('ticket-net').hidden = false;
+  $('ticket-net').className = `ticket-net ${net > 0 ? 'gain' : net < 0 ? 'loss' : ''}`;
+  $('ticket-net').textContent = `Net ${preciseSek.format(net)} SEK after the ${amount.format(stake)} SEK stake`;
+}
+
+function paintTicket() {
+  const entry = tickets.get($('ticket-model').value);
+  const ticket = !entry?.invalid && ticketLegs.every(leg => Array.isArray(entry?.ticket?.[leg]))
+    ? entry.ticket : null;
+  const revealed = ticketLegs.filter(leg => winners[leg]?.length);
+  const complete = revealed.length === ticketLegs.length;
+  const covered = revealed.filter(leg => ticket?.[leg].some(pick => winners[leg].includes(pick))).length;
+  $('ticket-week').textContent = `Week ${roundNo}`;
+  let status = 'Picks appear as each model submits its ticket.';
+  if (entry?.invalid) status = 'No valid ticket was submitted.';
+  else if (ticket) status = revealed.length
+    ? `${covered} of ${revealed.length} decided legs covered. Gold marks a winning pick.`
+    : 'Each row picks one horse per leg. The ticket contains every combination of these picks.';
+  $('ticket-state').textContent = status;
+  $('ticket-cost').hidden = !ticket;
+  if (ticket) {
+    const widths = ticketLegs.map(leg => ticket[leg].length);
+    const rows = entry.rows ?? widths.reduce((total, count) => total * count, 1);
+    const cost = entry.cost_sek;
+    const unit = rowPrice ?? cost / rows;
+    $('ticket-cost').textContent = `${widths.join(' × ')} = ${amount.format(rows)} rows` +
+      (Number.isFinite(unit) && Number.isFinite(cost) ? ` · ${unit.toFixed(2)} SEK per row · ${amount.format(cost)} SEK stake` : '');
+  }
+  $('ticket-legs').hidden = !ticket && !revealed.length;
+  $('ticket-legs').replaceChildren(...ticketLegs.map(leg => {
+    const item = element('li', null, 'ticket-leg');
+    const picks = ticket?.[leg] ?? [];
+    const result = winners[leg] ?? [];
+    const header = element('div', `Leg ${leg}`, 'ticket-leg-heading');
+    if (picks.length === 1) header.append(element('span', 'Spik'));
+    const chips = element('div', null, 'ticket-picks');
+    const ordered = [...picks].sort((a, b) =>
+      String(programNumber(leg, a)).localeCompare(String(programNumber(leg, b)), 'en', {numeric: true}));
+    for (const pick of ordered) {
+      const chip = element('span', programNumber(leg, pick), `runner${result.includes(pick) ? ' hit' : ''}`);
+      const starter = cards[leg]?.find(runner => runner.id === pick);
+      if (starter?.text) chip.title = starter.text;
+      chips.append(chip);
+    }
+    if (!picks.length) chips.append(element('span', '—'));
+    const resultLabel = result.map(pick => programNumber(leg, pick)).join(' / ');
+    item.append(header, chips, element('p', !result.length ? 'Awaiting result'
+      : `${result.length > 1 ? 'Dead heat' : 'Winner'} ${resultLabel}`, 'ticket-leg-result'));
+    return item;
+  }));
+  $('ticket-winning-row').hidden = !complete;
+  if (complete) {
+    const deadHeat = ticketLegs.some(leg => winners[leg].length > 1);
+    $('winning-row-label').textContent = deadHeat ? 'Winning combinations' : 'Winning row';
+    $('winning-row-value').textContent = ticketLegs.map(leg => {
+      const options = winners[leg].map(pick => programNumber(leg, pick));
+      return options.length > 1 ? `(${options.join(' or ')})` : options[0];
+    }).join(' → ');
+  }
+  paintTicketPayout(entry, ticket, complete);
 }
 
 function paint() {
@@ -246,6 +394,7 @@ function paint() {
     return row;
   });
   $('scores').replaceChildren(...rows);
+  paintTicket();
   plot();
 }
 
@@ -442,7 +591,8 @@ document.addEventListener('click', event => {
   if (event.target !== chart && !inspector.contains(event.target)) selectChartWeek(null);
 });
 new ResizeObserver(plot).observe(chart);
-fetch('replay.json?v=3').then(response=>{
+$('ticket-model').onchange = paintTicket;
+fetch('replay.json?v=4').then(response=>{
   if (!response.ok) throw Error('The recorded replay could not load.');
   return response.json();
 }).then(data=>{ if(!imported) install(data.events,false); }).catch(e=>{ $('notice').textContent=e.message; });

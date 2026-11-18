@@ -6,8 +6,8 @@
   <meta name="description" content="Replay ten weeks of V85 model picks and official race results.">
   <title>ATG V85 replay · Solace demo</title>
   <link rel="stylesheet" href="theme.css?v=4">
-  <link rel="stylesheet" href="style.css?v=7">
-  <script defer src="app.js?v=6"></script>
+  <link rel="stylesheet" href="style.css?v=8">
+  <script defer src="app.js?v=7"></script>
 </head>
 <body>
   <header class="mast">
@@ -76,6 +76,29 @@
         </section>
       </section>
     </div>
+    <section class="panel ticket-inspector" id="ticket-inspector" aria-labelledby="ticket-title">
+      <div class="panel-head ticket-head">
+        <div><h2 id="ticket-title">Ticket breakdown</h2><span id="ticket-week">Week 1</span></div>
+        <label class="ticket-model">Forecaster <select id="ticket-model" disabled></select></label>
+      </div>
+      <div class="ticket-body">
+        <p id="ticket-state" class="ticket-note">Picks appear as each model submits its ticket.</p>
+        <p id="ticket-cost" class="ticket-cost" hidden></p>
+        <ol id="ticket-legs" class="ticket-legs" aria-label="Picks and winners by leg" hidden></ol>
+        <p id="ticket-winning-row" class="winning-row" hidden><strong id="winning-row-label">Winning row</strong><span id="winning-row-value"></span></p>
+        <div id="ticket-payout" class="ticket-payout" hidden>
+          <div>
+            <h3>How the payout adds up</h3>
+            <p id="payout-formula"></p>
+          </div>
+          <table id="ticket-tiers" aria-label="Payout breakdown by prize tier">
+            <thead><tr><th scope="col">Correct</th><th scope="col">Rows</th><th scope="col">SEK per row</th><th scope="col">Payout SEK</th></tr></thead>
+            <tbody id="ticket-tier-rows"></tbody>
+          </table>
+          <p id="ticket-net" class="ticket-net"></p>
+        </div>
+      </div>
+    </section>
     <section class="panel participants" aria-labelledby="participants-title">
       <div class="panel-head"><h2 id="participants-title">Participants</h2></div>
       <table aria-label="Participant standings">
@@ -93,7 +116,7 @@
           <a href="prompt-study.html">Prompt study</a>
           <button type="button" id="open-file">Open event log</button>
         </nav>
-        <p>The public replay uses anonymized runners and illustrative Solace topics.</p>
+        <p>The ticket breakdown shows official program numbers. The event stream uses runner letters and illustrative Solace topics.</p>
       </details>
       <input type="file" id="file" accept=".json,.jsonl,application/json,text/plain" hidden>
     </footer>

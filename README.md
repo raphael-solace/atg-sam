@@ -6,7 +6,7 @@ A static GitHub Pages viewer for a recorded 10-round V85 backtest. Its topic str
 
 Run `python3 -m http.server 8000` from this folder to preview it. The site has no build step or runtime service.
 
-The bundled replay uses anonymized options and displays real historical decisions and performance. The public export omits horse and driver names, dates, tracks, original program numbers, market snapshots, and official payout amounts. **Replay details** contains links to the studies and **Open event log**, which reads internal JSONL files in the browser without uploading or storing them.
+The bundled replay uses runner letters in the event stream and displays real historical decisions and performance. **Ticket breakdown** shows each forecaster’s official program numbers, the row-count calculation, winning combinations, and the official prize per row after settlement. The public export omits horse and driver names, dates, tracks, and market snapshots. **Replay details** contains links to the studies and **Open event log**, which reads internal JSONL files in the browser without uploading or storing them.
 
 The GPT-6 Astra council routes to one available GPT, Gemini and Claude forecast using results from earlier rounds only. Astra weights the selected forecasts and public markets for each leg. A common ticket builder applies the budget. The market-only control uses the same engine and builder with only the two market signals.
 
