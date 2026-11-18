@@ -41,7 +41,9 @@ const series = new Map([
 const sek = new Intl.NumberFormat('en-GB', {maximumFractionDigits: 0, signDisplay: 'exceptZero'});
 const pct = new Intl.NumberFormat('en-GB', {style: 'percent', maximumFractionDigits: 1, minimumFractionDigits: 1, signDisplay: 'exceptZero'});
 const fmtTime = sec => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+const excludedParticipants = new Set(['harry_boy', 'crowd', 'win_odds']);
 let replay = [], settlements = [], playing = false, elapsed = 0, cursor = 0, lastFrame = null;
+let participants = [];
 let roundKey, roundNo, legNo, cards, winners, board, settled, phase, imported = false;
 
 function element(tag, content, className) {
@@ -75,7 +77,9 @@ function install(events, personal) {
       !events.every(e => Number.isFinite(e.at) && e.at >= 0 &&
                        parseTopic(e.topic) &&
                         e.payload && typeof e.payload === 'object')) throw Error('Unsupported replay file.');
-  const ordered = events.map(e => ({...e, address: parseTopic(e.topic)})).sort((a,b) => a.at - b.at);
+  const ordered = events.map(e => ({...e, address: parseTopic(e.topic)}))
+    .filter(({address}) => address.kind !== 'bet' || !excludedParticipants.has(address.detail))
+    .sort((a,b) => a.at - b.at);
   const rounds = ordered.filter(e => e.address.kind === "leaderboard");
   if (!rounds.length || rounds.length > 10 || rounds.some((r,i) =>
       r.payload.after_round !== i + 1 || !Array.isArray(r.payload.standings))) throw Error('Missing or out-of-order leaderboard settlements.');
@@ -83,6 +87,13 @@ function install(events, personal) {
   imported = personal;
   replay = ordered;
   settlements = rounds;
+  const roster = new Map();
+  for (const {payload} of rounds) {
+    for (const row of participantRows(payload.standings)) {
+      roster.set(row.name, {name: row.name, label: row.label});
+    }
+  }
+  participants = [...roster.values()].sort((a, b) => a.label.localeCompare(b.label));
   $('source').textContent = personal ? 'Local event log' : 'Recorded replay';
   $('basis').textContent = personal ? 'Local file · Read in this browser only' : 'Historical replay · No bets placed';
   $('play').disabled = $('restart').disabled = false;
@@ -113,12 +124,16 @@ function pushEvent(evt, type, title, details = null) {
   if ($('feed').children.length > 56) $('feed').lastChild.remove();
 }
 
+function participantRows(standings) {
+  return standings.filter(row => row.strategy !== 'builder' && !excludedParticipants.has(row.name))
+    .map(row => row.name === 'o3' ? {...row, label: 'Orchestrator3'} : row);
+}
+
 function scoreRows(standings) {
-  const entries = standings.filter(row => row.strategy !== 'builder')
+  const entries = participantRows(standings)
     .sort((a, b) => (b.roi ?? -Infinity) - (a.roi ?? -Infinity));
   return entries.map(row => ({
     ...row,
-    label: row.name === 'o3' ? 'Orchestrator3' : row.label,
     rank: row.roi == null ? null : entries.findIndex(entry => entry.roi === row.roi) + 1,
   }));
 }
@@ -180,7 +195,6 @@ function paint() {
   const done = cursor === replay.length;
   const featured = board.find(row => row.name === 'o3');
   const focus = featured || board.find(row => row.rank === 1);
-  const entries = featured ? [featured, ...board.filter(row => row !== featured)] : board;
   for (const item of $('legend').children) {
     const entry = item.dataset.entry;
     item.hidden = !board.some(row => row.bankroll.length && (entry === 'others' ? !series.has(row.name) : row.name === entry));
@@ -211,7 +225,10 @@ function paint() {
     element('span', `Leg ${legNo}`),
     ...card.map(r => element('span', r.text || r, `runner${winners[legNo]?.includes(r.id || r) ? ' hit' : ''}`))
   ] : []));
-  const rows = entries.map(r => {
+  const ranked = new Set(board.map(row => row.name));
+  const entries = [...board, ...participants.filter(row => !ranked.has(row.name))];
+  const pinned = entries.find(row => row.name === 'o3');
+  const rows = (pinned ? [pinned, ...entries.filter(row => row !== pinned)] : entries).map(r => {
     const row = element('tr', null, r.name === 'o3' ? 'featured' : '');
     const staked = r.rank != null;
     row.append(
@@ -223,12 +240,7 @@ function paint() {
     );
     return row;
   });
-  if (rows.length) $('scores').replaceChildren(...rows);
-  else {
-    const cell = element('td', 'Standings appear after the first week.');
-    cell.colSpan = 5;
-    const row = element('tr'); row.append(cell); $('scores').replaceChildren(row);
-  }
+  $('scores').replaceChildren(...rows);
   plot();
 }
 

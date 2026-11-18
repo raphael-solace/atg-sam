@@ -15,4 +15,4 @@ The **Prompt study** page compares basic and selective-value prompting in a sepa
 
 Enable **Show topics** to display the demo's proposed ATG-style topic addresses. The roots follow Solace’s domain, object, action, and version pattern. Race cards and official results use the racing namespace, pool settlement uses betting, and simulated model proposals and standings use analytics. These names do not describe a verified ATG production catalog.
 
-The chart and standings count all ten rounds, including the original penalties for invalid tickets. The featured **Orchestrator3** entry, the Claude Opus 5.5 panel, appears first in the table with its recorded ROI rank. Other entries are listed in ROI order. The two market forecasts are scored by log loss and have no bankroll curve.
+The chart and standings count all ten rounds, including the original penalties for invalid tickets. The participant list below the replay is available before playback, and scores appear as weeks settle. **Orchestrator3**, the Claude Opus 5.5 panel, appears first with its recorded ROI rank. The viewer omits the Harry Boy-style sampler and the two public-market forecasts.

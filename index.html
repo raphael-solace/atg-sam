@@ -6,8 +6,8 @@
   <meta name="description" content="Replay ten weeks of V85 model picks and official race results.">
   <title>ATG V85 replay · Solace demo</title>
   <link rel="stylesheet" href="theme.css?v=4">
-  <link rel="stylesheet" href="style.css?v=4">
-  <script defer src="app.js?v=4"></script>
+  <link rel="stylesheet" href="style.css?v=5">
+  <script defer src="app.js?v=5"></script>
 </head>
 <body>
   <header class="mast">
@@ -65,14 +65,15 @@
         </div>
         <canvas id="chart" aria-label="Cumulative net return by settled week, including invalid-ticket penalties" role="img"></canvas>
         <div class="legend" id="legend" aria-label="Chart series"></div>
-        <div class="table-wrap">
-          <table aria-label="Standings">
-            <thead><tr><th scope="col">Forecaster</th><th scope="col">ROI rank</th><th scope="col">Net SEK</th><th scope="col">ROI</th><th scope="col">Log loss</th></tr></thead>
-            <tbody id="scores"><tr><td colspan="5">Standings appear after the first week.</td></tr></tbody>
-          </table>
-        </div>
       </section>
     </div>
+    <section class="panel participants" aria-labelledby="participants-title">
+      <div class="panel-head"><h2 id="participants-title">Participants</h2></div>
+      <table aria-label="Participant standings">
+        <thead><tr><th scope="col">Forecaster</th><th scope="col">ROI rank</th><th scope="col">Net SEK</th><th scope="col">ROI</th><th scope="col">Log loss</th></tr></thead>
+        <tbody id="scores"></tbody>
+      </table>
+    </section>
     <footer>
       <span id="basis">Historical replay · No bets placed</span>
       <details class="extras">

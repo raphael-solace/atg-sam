@@ -76,8 +76,7 @@ h2 { font-size: 1.18rem; line-height: 1.2; letter-spacing: -.025em; color: var(-
 .runner { border-radius: 4px; padding: 1px 5px; background: #e4effb; color: var(--navy); font-weight: 600; }
 .runner.hit { background: var(--yellow); color: var(--navy); }
 
-.feed { height: 500px; overflow: auto; overscroll-behavior: contain; }
-.feed:has(> .placeholder) { height: 290px; }
+.feed { height: 245px; overflow: auto; overscroll-behavior: contain; }
 .placeholder { padding: 16px; color: var(--muted); font-size: .82rem; }
 .event { padding: 0 16px; border-bottom: 1px solid var(--line); }
 .event .item { display: grid; grid-template-columns: 39px 56px minmax(0, 1fr); column-gap: 7px; align-items: baseline; padding: 8px 0; }
@@ -116,10 +115,10 @@ h2 { font-size: 1.18rem; line-height: 1.2; letter-spacing: -.025em; color: var(-
 .legend { display: flex; flex-wrap: wrap; gap: 5px 13px; padding: 0 16px 12px; color: var(--muted); font-size: .74rem; }
 .swatch { display: inline-block; width: 13px; margin-right: 4px; border-top: 2px solid currentColor; vertical-align: middle; }
 
-.table-wrap { max-height: 310px; overflow: auto; }
+.participants { margin-top: 12px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 td, th { padding: 7px 10px; border-top: 1px solid var(--line); text-align: right; font-size: .78rem; white-space: nowrap; }
-th { position: sticky; top: 0; background: var(--tint); color: var(--muted); font-size: .74rem; }
+th { background: var(--tint); color: var(--muted); font-size: .74rem; }
 :is(td, th):first-child { padding-left: 16px; text-align: left; white-space: normal; }
 :is(td, th):last-child { padding-right: 16px; }
 #scores .featured { background: #fff9df; }
@@ -139,7 +138,7 @@ footer { display: flex; justify-content: space-between; align-items: start; flex
   .controls { flex-wrap: wrap; gap: 8px 12px; }
   .week-picker { order: 1; flex-basis: 100%; }
   .grid { grid-template-columns: 1fr; }
-  .feed { height: 300px; }
+  .feed { height: 225px; }
   .feed:has(> .placeholder) { height: 110px; }
 }
 
